@@ -65,6 +65,27 @@ func TestHomeReturnsHelloWorld(t *testing.T) {
 	assert.Equal(t, "Hello, world", body, "expected body to match")
 }
 
+func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
+	testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
+		"unitServerTest":        func(*testing.T) (string, func(), HTTPClient) {
+			s := server.NewHTTPServer()
+			httpClient := &InMemoryHTTPClient{server: s}
+			return "", func() {}, httpClient
+    },
+		"integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+			baseURL, stop := startTestingHTTPServer(t)
+			return baseURL, stop, http.DefaultClient
+		},
+	}
+	for name, dep := range testStates {
+		baseT.Run(name, func(t *testing.T) {
+			baseURL, stop, client := dep(t)
+			defer stop()
+			test(t, baseURL, client)
+		})
+	}
+}
+
 func startTestingHTTPServer(t *testing.T) (string, func()) {
 	ctx := context.Background()
 	s := server.NewHTTPServer()
