@@ -27,21 +27,8 @@ func TestHomeReturnsHelloWorldLocal(t *testing.T) {
 }
 
 func TestHomeReturnsHelloWorld(t *testing.T) {
-	s := server.NewHTTPServer()
-
-	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatalf("could not listen for HTTP requests: %+v", err)
-	}
-	baseURL := "http://" + listener.Addr().String()
-	srvr := http.Server{Addr: baseURL, Handler: s}
-
-	go srvr.Serve(listener)
-	defer func() {
-		if err := srvr.Shutdown(context.Background()); err != nil {
-			t.Logf("could not shutdown http server: %+v", err)
-		}
-	}()
+	baseURL, stop := startTestingHTTPServer(t)
+	defer stop()
 
 	httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
 	require.NoError(t, err, "could not create GET / request")
@@ -53,6 +40,26 @@ func TestHomeReturnsHelloWorld(t *testing.T) {
 	require.NoError(t, err, "unexpected error reading response body")
 	assert.Equal(t, "Hello, world", body, "expected body to match")
 }
+
+func startTestingHTTPServer(t *testing.T) (string, func()) {
+	ctx := context.Background()
+	s := server.NewHTTPServer()
+
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("could not listen for HTTP requests: %+v", err)
+	}
+	baseURL := "http://" + listener.Addr().String()
+	srvr := http.Server{Addr: baseURL, Handler: s}
+
+	go srvr.Serve(listener)
+	return baseURL, func() {
+		if err := srvr.Shutdown(ctx); err != nil {
+			t.Logf("could not shutdown http server: %+v", err)
+		}
+	}
+}
+
 
 func readBodyFrom(resp *http.Response) (string, error) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
