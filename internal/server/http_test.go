@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"bytes"
 	"context"
 	"io/ioutil"
 	"net"
@@ -16,13 +17,26 @@ import (
 
 func TestHomeReturnsHelloWorldLocal(t *testing.T) {
 	s := server.NewHTTPServer()
+	baseURL := ""
 
-	w := httptest.NewRecorder()
-	httpReq := httptest.NewRequest(http.MethodGet, "/", nil)
-	s.ServeHTTP(w, httpReq)
+	makeRequest := func(r *http.Request) (*http.Response, error) {
+		w := httptest.NewRecorder()
+		s.ServeHTTP(w, r)
 
-	require.Equal(t, http.StatusOK, w.Code, "expected status code to match for req %+v", httpReq)
-	body := string(w.Body.Bytes())
+		return &http.Response{
+			StatusCode: w.Code,
+			Body:       ioutil.NopCloser(bytes.NewReader(w.Body.Bytes())),
+		}, nil
+	}
+
+	httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+	require.NoError(t, err, "could not create GET / request")
+
+	resp, err := makeRequest(httpReq)
+	require.NoError(t, err, "error making request %+v", httpReq)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+	body, err := readBodyFrom(resp)
+	require.NoError(t, err, "unexpected error reading response body")
 	assert.Equal(t, "Hello, world", body, "expected body to match")
 }
 
@@ -30,10 +44,14 @@ func TestHomeReturnsHelloWorld(t *testing.T) {
 	baseURL, stop := startTestingHTTPServer(t)
 	defer stop()
 
+	makeRequest := func(r *http.Request) (*http.Response, error) {
+		return http.DefaultClient.Do(r)
+	}
+
 	httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
 	require.NoError(t, err, "could not create GET / request")
 
-	resp, err := http.DefaultClient.Do(httpReq)
+	resp, err := makeRequest(httpReq)
 	require.NoError(t, err, "error making request %+v", httpReq)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
 	body, err := readBodyFrom(resp)
