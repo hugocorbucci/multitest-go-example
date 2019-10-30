@@ -1,9 +1,13 @@
 SERVER_PATH=cmd/server
 
-.DEFAULT_GOAL := local-run
+.DEFAULT_GOAL := test
 
 target:
 	mkdir -p target
+
+test:
+	go test ./...
+.PHONY: test
 
 local-run:
 	$(MAKE) -C ${SERVER_PATH} $@

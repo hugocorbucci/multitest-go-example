@@ -6,10 +6,14 @@ GOPATH:=$(shell echo ${GOPATH})
 PROJECT_ROOT=$(shell cd ../.. && pwd)
 SERVER_RELATIVE=$(shell pwd | sed -e "s|^${GOPATH}/||g" )
 SHMIG_CONFIG=docker
-.DEFAULT_GOAL := local-run
+.DEFAULT_GOAL := test
 
 target:
 	mkdir -p target
+
+test:
+	$(MAKE) -C "../.." $@
+.PHONY: test
 
 clean:
 	@echo "==> Cleaning releases"
