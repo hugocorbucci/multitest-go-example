@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/hugocorbucci/multitest-go-example/internal/server"
@@ -49,23 +50,27 @@ func TestHomeReturnsHelloWorld(t *testing.T) {
 }
 
 func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
-	testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
-		"unitServerTest":        func(*testing.T) (string, func(), HTTPClient) {
-			s := server.NewHTTPServer()
-			httpClient := &InMemoryHTTPClient{server: s}
-			return "", func() {}, httpClient
-    },
-		"integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
-			baseURL, stop := startTestingHTTPServer(t)
-			return baseURL, stop, http.DefaultClient
-		},
-	}
-	for name, dep := range testStates {
-		baseT.Run(name, func(t *testing.T) {
-			baseURL, stop, client := dep(t)
-			defer stop()
-			test(t, baseURL, client)
-		})
+	if len(os.Getenv("TARGET_URL")) == 0 {
+		testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
+			"unitServerTest":        func(*testing.T) (string, func(), HTTPClient) {
+				s := server.NewHTTPServer()
+				httpClient := &InMemoryHTTPClient{server: s}
+				return "", func() {}, httpClient
+			},
+			"integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+				baseURL, stop := startTestingHTTPServer(t)
+				return baseURL, stop, http.DefaultClient
+			},
+		}
+		for name, dep := range testStates {
+			baseT.Run(name, func(t *testing.T) {
+				baseURL, stop, client := dep(t)
+				defer stop()
+				test(t, baseURL, client)
+			})
+		}
+	} else {
+		test(baseT, os.Getenv("TARGET_URL"), http.DefaultClient)
 	}
 }
 
