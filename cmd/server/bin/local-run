@@ -1,0 +1,11 @@
+#!/bin/bash
+# set -x # Uncomment to debug
+set -e
+set -o pipefail
+
+SCRIPT_FOLDER=$(dirname "${BASH_SOURCE[0]}")
+PROJECT_ROOT=$(cd "${SCRIPT_FOLDER}/.." && pwd)
+
+cd "${PROJECT_ROOT}"
+
+go run main.go
