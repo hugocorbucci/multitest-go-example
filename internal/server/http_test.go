@@ -33,36 +33,19 @@ func (c *InMemoryHTTPClient) Do(r *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-func TestHomeReturnsHelloWorldLocal(t *testing.T) {
-	s := server.NewHTTPServer()
-	httpClient := &InMemoryHTTPClient{server: s}
-	baseURL := ""
-
-	httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
-	require.NoError(t, err, "could not create GET / request")
-
-	resp, err := httpClient.Do(httpReq)
-	require.NoError(t, err, "error making request %+v", httpReq)
-	require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
-	body, err := readBodyFrom(resp)
-	require.NoError(t, err, "unexpected error reading response body")
-	assert.Equal(t, "Hello, world", body, "expected body to match")
-}
-
 func TestHomeReturnsHelloWorld(t *testing.T) {
-	baseURL, stop := startTestingHTTPServer(t)
-	defer stop()
-	httpClient := http.DefaultClient
+	withDependencies(t, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+		httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+		require.NoError(t, err, "could not create GET / request")
 
-	httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
-	require.NoError(t, err, "could not create GET / request")
+		resp, err := httpClient.Do(httpReq)
+		require.NoError(t, err, "error making request %+v", httpReq)
 
-	resp, err := httpClient.Do(httpReq)
-	require.NoError(t, err, "error making request %+v", httpReq)
-	require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
-	body, err := readBodyFrom(resp)
-	require.NoError(t, err, "unexpected error reading response body")
-	assert.Equal(t, "Hello, world", body, "expected body to match")
+		require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+		body, err := readBodyFrom(resp)
+		require.NoError(t, err, "unexpected error reading response body")
+		assert.Equal(t, "Hello, world", body, "expected body to match")
+	})
 }
 
 func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
