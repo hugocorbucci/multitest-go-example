@@ -15,24 +15,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type HTTPClient interface {
+	Do(r *http.Request) (*http.Response, error)
+}
+type InMemoryHTTPClient struct {
+	server *server.Server
+}
+
+func (c *InMemoryHTTPClient) Do(r *http.Request) (*http.Response, error) {
+	w := httptest.NewRecorder()
+	c.server.ServeHTTP(w, r)
+
+	return &http.Response{
+		Header:     w.Header(),
+		StatusCode: w.Code,
+		Body:       ioutil.NopCloser(bytes.NewReader(w.Body.Bytes())),
+	}, nil
+}
+
 func TestHomeReturnsHelloWorldLocal(t *testing.T) {
 	s := server.NewHTTPServer()
+	httpClient := &InMemoryHTTPClient{server: s}
 	baseURL := ""
-
-	makeRequest := func(r *http.Request) (*http.Response, error) {
-		w := httptest.NewRecorder()
-		s.ServeHTTP(w, r)
-
-		return &http.Response{
-			StatusCode: w.Code,
-			Body:       ioutil.NopCloser(bytes.NewReader(w.Body.Bytes())),
-		}, nil
-	}
 
 	httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
 	require.NoError(t, err, "could not create GET / request")
 
-	resp, err := makeRequest(httpReq)
+	resp, err := httpClient.Do(httpReq)
 	require.NoError(t, err, "error making request %+v", httpReq)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
 	body, err := readBodyFrom(resp)
@@ -43,15 +52,12 @@ func TestHomeReturnsHelloWorldLocal(t *testing.T) {
 func TestHomeReturnsHelloWorld(t *testing.T) {
 	baseURL, stop := startTestingHTTPServer(t)
 	defer stop()
-
-	makeRequest := func(r *http.Request) (*http.Response, error) {
-		return http.DefaultClient.Do(r)
-	}
+	httpClient := http.DefaultClient
 
 	httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
 	require.NoError(t, err, "could not create GET / request")
 
-	resp, err := makeRequest(httpReq)
+	resp, err := httpClient.Do(httpReq)
 	require.NoError(t, err, "error making request %+v", httpReq)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
 	body, err := readBodyFrom(resp)
