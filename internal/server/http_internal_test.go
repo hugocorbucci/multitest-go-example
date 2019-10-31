@@ -10,9 +10,11 @@ import (
 )
 
 func TestHelloWord(t *testing.T) {
+	handler := &httpHandler{}
+
 	w := httptest.NewRecorder()
 
-	helloWorld(w, nil)
+	handler.helloWorld(w, nil)
 
 	require.Equal(t, http.StatusOK, w.Code, "expected status code to match")
 	body := string(w.Body.Bytes())

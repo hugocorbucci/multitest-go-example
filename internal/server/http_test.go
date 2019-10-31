@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/hugocorbucci/multitest-go-example/internal/server"
+	"github.com/hugocorbucci/multitest-go-example/internal/storage/sqltesting"
+	"github.com/hugocorbucci/multitest-go-example/internal/storage/stubs"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,12 +55,16 @@ func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient
 	if len(os.Getenv("TARGET_URL")) == 0 {
 		testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
 			"unitServerTest":        func(*testing.T) (string, func(), HTTPClient) {
-				s := server.NewHTTPServer()
+				repo := stubs.NewStubRepository(nil)
+				s := server.NewHTTPServer(repo)
 				httpClient := &InMemoryHTTPClient{server: s}
 				return "", func() {}, httpClient
 			},
 			"integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
-				baseURL, stop := startTestingHTTPServer(t)
+				ctx := context.Background()
+				inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
+				require.NoError(t, err, "error creating in memory store")
+				baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
 				return baseURL, stop, http.DefaultClient
 			},
 		}
@@ -74,9 +80,9 @@ func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient
 	}
 }
 
-func startTestingHTTPServer(t *testing.T) (string, func()) {
+func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore) (string, func()) {
 	ctx := context.Background()
-	s := server.NewHTTPServer()
+	s := server.NewHTTPServer(inMemoryStore)
 
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {

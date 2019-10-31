@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/hugocorbucci/multitest-go-example/internal/storage"
+
 	"github.com/gorilla/mux"
 )
 
@@ -11,16 +13,22 @@ import (
 type Server struct {
   *mux.Router
 }
-	
-// NewHTTPServer creates a new server
-func NewHTTPServer() *Server {
-  r := mux.NewRouter()
-  r.HandleFunc("/", helloWorld).Methods(http.MethodGet)
 
-  return &Server{r}
+type httpHandler struct {
+	repo storage.Repository
 }
 
-func helloWorld(w http.ResponseWriter, req *http.Request) {
+// NewHTTPServer creates a new server
+func NewHTTPServer(repo storage.Repository) *Server {
+	handler := &httpHandler{repo}
+
+	r := mux.NewRouter()
+	r.HandleFunc("/", handler.helloWorld).Methods(http.MethodGet)
+
+	return &Server{r}
+}
+
+func (h *httpHandler) helloWorld(w http.ResponseWriter, req *http.Request) {
 	msg := "Hello, world"
 	fmt.Println("Responding request")	
   w.Write([]byte(msg))
