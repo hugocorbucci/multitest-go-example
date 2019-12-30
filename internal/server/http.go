@@ -11,7 +11,7 @@ import (
 
 // Server represents the HTTP server
 type Server struct {
-  *mux.Router
+	*mux.Router
 }
 
 type httpHandler struct {
@@ -24,12 +24,16 @@ func NewHTTPServer(repo storage.Repository) *Server {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handler.helloWorld).Methods(http.MethodGet)
+	r.HandleFunc("/s/{short:[a-f0-9]+}", handler.shortURL).Methods(http.MethodGet)
 
 	return &Server{r}
 }
 
 func (h *httpHandler) helloWorld(w http.ResponseWriter, req *http.Request) {
 	msg := "Hello, world"
-	fmt.Println("Responding request")	
-  w.Write([]byte(msg))
+	fmt.Println("Responding request")
+	w.Write([]byte(msg))
+}
+
+func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
 }
