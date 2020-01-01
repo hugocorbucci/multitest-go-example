@@ -113,19 +113,8 @@ type TestDependencies struct {
 func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)) {
 	if len(os.Getenv("TARGET_URL")) == 0 {
 		testStates := map[string]func(*testing.T) (*TestDependencies, func()){
-			"unitServerTest": func(*testing.T) (*TestDependencies, func()) {
-				repo := stubs.NewStubRepository(nil)
-				s := server.NewHTTPServer(repo)
-				httpClient := &InMemoryHTTPClient{server: s}
-				return &TestDependencies{BaseURL: "", HTTPClient: httpClient}, func() {}
-			},
-			"integrationServerTest": func(t *testing.T) (*TestDependencies, func()) {
-				ctx := context.Background()
-				inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
-				require.NoError(t, err, "error creating in memory store")
-				baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
-				return &TestDependencies{BaseURL: baseURL, HTTPClient: http.DefaultClient}, stop
-			},
+			"unitServerTest":        unitDependencies,
+			"integrationServerTest": integrationDependencies,
 		}
 		for name, dep := range testStates {
 			baseT.Run(name, func(t *testing.T) {
@@ -135,8 +124,27 @@ func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)
 			})
 		}
 	} else {
-		test(baseT, &TestDependencies{BaseURL: os.Getenv("TARGET_URL"), HTTPClient: http.DefaultClient})
+		test(baseT, smokeDependencies(baseT))
 	}
+}
+
+func unitDependencies(*testing.T) (*TestDependencies, func()) {
+	repo := stubs.NewStubRepository(nil)
+	s := server.NewHTTPServer(repo)
+	httpClient := &InMemoryHTTPClient{server: s}
+	return &TestDependencies{BaseURL: "", HTTPClient: httpClient}, func() {}
+}
+
+func integrationDependencies(t *testing.T) (*TestDependencies, func()) {
+	ctx := context.Background()
+	inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
+	require.NoError(t, err, "error creating in memory store")
+	baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
+	return &TestDependencies{BaseURL: baseURL, HTTPClient: http.DefaultClient}, stop
+}
+
+func smokeDependencies(_ *testing.T) *TestDependencies {
+	return &TestDependencies{BaseURL: os.Getenv("TARGET_URL"), HTTPClient: http.DefaultClient}
 }
 
 func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore) (string, func()) {
