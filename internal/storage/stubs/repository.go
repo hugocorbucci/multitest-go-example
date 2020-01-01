@@ -38,3 +38,9 @@ func (r *Repository) ExpandShortURL(_ context.Context, s string) (string, error)
 func (r *Repository) Add(input, output string) {
 	r.data[input] = output
 }
+
+// RegisterURLMapping adds the shortPath as the key for the longURL
+func (r *Repository) RegisterURLMapping(_ context.Context, longURL, shortPath string) error {
+	r.Add(shortPath, longURL)
+	return nil
+}

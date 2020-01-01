@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"testing"
+	"time"
 
 	"github.com/hugocorbucci/multitest-go-example/internal/storage"
 
@@ -36,7 +37,19 @@ func NewMemoryStore(ctx context.Context, l *log.Logger) (*MemoryStore, error) {
 
 // NewSQLiteDB creates a SQLite DB with the default structure
 func NewSQLiteDB(ctx context.Context, l *log.Logger) (*sql.DB, error) {
-	return sql.Open("sqlite3", "file::memory:?mode=memory&cache=shared")
+	db, err := sql.Open("sqlite3", "file::memory:?mode=memory&cache=shared")
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err = db.ExecContext(ctx, MemoryStructure)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 type testingLogWriter struct {
@@ -54,3 +67,19 @@ func (w *testingLogWriter) Write(b []byte) (int, error) {
 func NewTestingLog(t *testing.T) *log.Logger {
 	return log.New(&testingLogWriter{t}, "", 0)
 }
+
+// MemoryStructure is the database structure for a the sqlite "memory" database.
+const MemoryStructure = `
+PRAGMA synchronous = OFF;
+PRAGMA journal_mode = OFF;
+
+CREATE TABLE IF NOT EXISTS url_mapping (
+	id integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+	url VARCHAR(255) NOT NULL,
+	short_url VARCHAR(12) NOT NULL,
+	updated_at DEFAULT CURRENT_TIMESTAMP,
+	created_at DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_url_mapping_short_url" ON "url_mapping" (short_url);
+`

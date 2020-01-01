@@ -90,7 +90,8 @@ func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
 		if mocking {
 			repo.Add(input, output)
 		} else {
-			// TODO: cadastrar a URL
+			err := deps.DB.RegisterURLMapping(context.Background(), output, input)
+			require.NoError(t, err, "unexpected error registering url")
 		}
 
 		httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/"+input, nil)
@@ -146,7 +147,12 @@ func integrationDependencies(t *testing.T) (*TestDependencies, func()) {
 	ctx := context.Background()
 	inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
 	require.NoError(t, err, "error creating in memory store")
+
 	baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
+	http.DefaultClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
 	return &TestDependencies{
 		BaseURL:    baseURL,
 		HTTPClient: http.DefaultClient,

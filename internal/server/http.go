@@ -57,6 +57,7 @@ func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusFound)
 	w.Header().Set("Location", longURL)
+	w.WriteHeader(http.StatusFound)
+	w.Write([]byte{})
 }
