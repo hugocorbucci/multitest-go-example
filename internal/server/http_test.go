@@ -84,15 +84,10 @@ func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
 
 func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
 	withDependencies(baseT, func(t *testing.T, deps *TestDependencies) {
-		repo, mocking := deps.DB.(*stubs.Repository)
 		input := "123456789012"
 		output := "https://www.digitalocean.com"
-		if mocking {
-			repo.Add(input, output)
-		} else {
-			err := deps.DB.RegisterURLMapping(context.Background(), output, input)
-			require.NoError(t, err, "unexpected error registering url")
-		}
+		err := deps.DB.RegisterURLMapping(context.Background(), output, input)
+		require.NoError(t, err, "unexpected error registering url")
 
 		httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/"+input, nil)
 		require.NoError(t, err, "could not create GET / request")
@@ -164,6 +159,10 @@ func smokeDependencies(t *testing.T) *TestDependencies {
 	ctx := context.Background()
 	l := sqltesting.NewTestingLog(t)
 	db := storage.InitializeStore(ctx, "mysql", os.Getenv("DB_CONN"), l, 1, 10*time.Second)
+
+	http.DefaultClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
 	return &TestDependencies{
 		BaseURL:    os.Getenv("TARGET_URL"),
 		HTTPClient: http.DefaultClient,

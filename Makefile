@@ -9,6 +9,10 @@ test:
 	go test ./...
 .PHONY: test
 
+smoke_test:
+	$(MAKE) -C ${SERVER_PATH} $@
+.PHONY: smoke_test
+
 local-run:
 	$(MAKE) -C ${SERVER_PATH} $@
 .PHONY: local-run

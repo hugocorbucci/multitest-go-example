@@ -8,4 +8,41 @@ PROJECT_ROOT=$(cd "${SCRIPT_FOLDER}/.." && pwd)
 
 cd "${PROJECT_ROOT}"
 
+DEPENDENCIES=(mysql)
+if [ -n "${DEPENDENCIES}" ]; then
+  docker-compose up -d "${DEPENDENCIES[@]}"
+  function stopDockerCompose {
+    docker-compose stop
+  }
+  trap stopDockerCompose EXIT
+
+  if [[ " ${DEPENDENCIES[*]} " == *"mysql"* ]]; then
+    DB_HOST="127.0.0.1"
+    if [ -n "$(command -v docker-machine)" ]; then
+      DB_HOST="$(docker-machine ip default)"
+    fi
+    DB_PORT="$(docker-compose port mysql 3306 | sed -e 's|[\.0-9]*:||g')"
+    export DB_ADDR="${DB_HOST}:${DB_PORT}"
+    export DB_CONN="root:my-secret-pw@tcp(${DB_ADDR})/multitest"
+  fi
+fi
+
+export PATH="${PATH}:${SCRIPT_FOLDER}"
+
+if [ -n "${DEPENDENCIES}" ]; then
+  # For mac using coreutils from `brew install coreutils`
+  if [ -z "$(command -v timeout)" ] && [ ! -z "$(command -v gtimeout)" ]; then
+    ln -s "$(command -v gtimeout)" "${SCRIPT_FOLDER}/timeout"
+  fi
+
+  if [ ! -z "$(command -v timeout)" ]; then
+    if [[ " ${DEPENDENCIES[*]} " == *"mysql"* ]]; then
+      "${SCRIPT_FOLDER}/wait-for" "${DB_ADDR}" -t 60
+      make migrate
+    fi
+  else
+    echo "Neither timeout nor gtimeout (for mac via \`brew install coreutils\`) is available on PATH. Running without waiting for dependencies to be up..."
+  fi
+fi
+
 go run main.go
