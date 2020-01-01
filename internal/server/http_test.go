@@ -86,19 +86,24 @@ func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
 	withDependencies(baseT, func(t *testing.T, deps *TestDependencies) {
 		input := "123456789012"
 		output := "https://www.digitalocean.com"
-		err := deps.DB.RegisterURLMapping(context.Background(), output, input)
-		require.NoError(t, err, "unexpected error registering url")
+		do(func() {
+			err := deps.DB.RegisterURLMapping(context.Background(), output, input)
+			require.NoError(t, err, "unexpected error registering url")
 
-		httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/"+input, nil)
-		require.NoError(t, err, "could not create GET / request")
-		resp, err := deps.HTTPClient.Do(httpReq)
-		require.NoError(t, err, "error making request %+v", httpReq)
-		require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+			httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/"+input, nil)
+			require.NoError(t, err, "could not create GET / request")
+			resp, err := deps.HTTPClient.Do(httpReq)
+			require.NoError(t, err, "error making request %+v", httpReq)
+			require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
 
-		body, err := readBodyFrom(resp)
-		require.NoError(t, err, "unexpected error reading response body")
-		assert.Equal(t, "", body, "expected body to match")
-		assert.Equal(t, output, resp.Header.Get("Location"), "expected location to match")
+			body, err := readBodyFrom(resp)
+			require.NoError(t, err, "unexpected error reading response body")
+			assert.Equal(t, "", body, "expected body to match")
+			assert.Equal(t, output, resp.Header.Get("Location"), "expected location to match")
+		}).withTearDown(func() {
+			err := deps.DB.ClearMappingWithKey(context.Background(), input)
+			require.NoError(t, err, "unexpected error clearing mapping")
+		}).Now()
 	})
 }
 
@@ -124,6 +129,47 @@ func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)
 		}
 	} else {
 		test(baseT, smokeDependencies(baseT))
+	}
+}
+
+type testStructure struct {
+	test     func()
+	tearDown func()
+}
+
+func do(test func()) *testStructure {
+	return &testStructure{
+		test: test,
+	}
+}
+
+func withTearDown(tearDown func()) *testStructure {
+	return &testStructure{
+		tearDown: tearDown,
+	}
+}
+
+func (s *testStructure) do(test func()) *testStructure {
+	copy := &testStructure{}
+	*copy = *s
+	copy.test = test
+	return copy
+}
+
+func (s *testStructure) withTearDown(tearDown func()) *testStructure {
+	copy := &testStructure{}
+	*copy = *s
+	copy.tearDown = tearDown
+	return copy
+}
+
+func (s *testStructure) Now() {
+	if s.tearDown != nil {
+		defer s.tearDown()
+	}
+
+	if s.test != nil {
+		s.test()
 	}
 }
 

@@ -19,6 +19,9 @@ type Repository interface {
 	// RegisterURLMapping registers the first string as the long value URL on the second string short path.
 	// Emits an error if parameters are invalid or registration fails
 	RegisterURLMapping(context.Context, string, string) error
+	// ClearMappingWithKey removes the any expension on the given key.
+	// Emits an error if the removal fails
+	ClearMappingWithKey(context.Context, string) error
 }
 
 // NewSQLStore constructs a new sqlStore
@@ -44,6 +47,16 @@ func (s *sqlStore) ExpandShortURL(ctx context.Context, shortPath string) (string
 // It returns an error if the short URL already exists
 func (s *sqlStore) RegisterURLMapping(ctx context.Context, longURL, shortPath string) error {
 	_, err := s.db.ExecContext(ctx, "INSERT INTO url_mapping (url, short_url) VALUES (?, ?)", longURL, shortPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ClearMappingWithKey dissociates any long url to the given key
+// It returns an error if the dissociation fails
+func (s *sqlStore) ClearMappingWithKey(ctx context.Context, shortPath string) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM url_mapping WHERE short_url = ?", shortPath)
 	if err != nil {
 		return err
 	}

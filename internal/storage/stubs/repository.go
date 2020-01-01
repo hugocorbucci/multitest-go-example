@@ -44,3 +44,9 @@ func (r *Repository) RegisterURLMapping(_ context.Context, longURL, shortPath st
 	r.Add(shortPath, longURL)
 	return nil
 }
+
+// ClearMappingWithKey removes any entry associated with the given short path
+func (r *Repository) ClearMappingWithKey(_ context.Context, shortPath string) error {
+	delete(r.data, shortPath)
+	return nil
+}
