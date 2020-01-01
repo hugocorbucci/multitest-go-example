@@ -26,6 +26,15 @@ type Repository struct {
 }
 
 // ExpandShortURL returns the long string at the given key or a sql.NoRowsError if none is found
-func (r *Repository) ExpandShortURL(_ context.Context, _ string) (string, error) {
-	return "", sql.ErrNoRows
+func (r *Repository) ExpandShortURL(_ context.Context, s string) (string, error) {
+	v, ok := r.data[s]
+	if !ok {
+		return "", sql.ErrNoRows
+	}
+	return v, nil
+}
+
+// Add sets the input as the key and the output and the value for that key
+func (r *Repository) Add(input, output string) {
+	r.data[input] = output
 }

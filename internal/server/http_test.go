@@ -84,12 +84,11 @@ func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
 
 func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
 	withDependencies(baseT, func(t *testing.T, deps *TestDependencies) {
-		mocking := false
+		repo, mocking := deps.DB.(*stubs.Repository)
 		input := "123456789012"
 		output := "https://www.digitalocean.com"
-
 		if mocking {
-			// TODO: Mockar
+			repo.Add(input, output)
 		} else {
 			// TODO: cadastrar a URL
 		}
