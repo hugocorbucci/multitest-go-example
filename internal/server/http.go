@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 
@@ -36,4 +37,26 @@ func (h *httpHandler) helloWorld(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	short := mux.Vars(req)["short"]
+	if len(short) != 12 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	longURL, err := h.repo.ExpandShortURL(ctx, short)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("404 page not found\n"))
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(fmt.Sprintf("%+v", err)))
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusFound)
+	w.Header().Set("Location", longURL)
 }

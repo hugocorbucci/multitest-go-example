@@ -1,6 +1,9 @@
 package stubs
 
 import (
+	"context"
+	"database/sql"
+
 	"github.com/hugocorbucci/multitest-go-example/internal/storage"
 )
 
@@ -20,4 +23,9 @@ func NewStubRepository(initialData map[string]string) *Repository {
 // Repository is a repository stub
 type Repository struct {
 	data map[string]string
+}
+
+// ExpandShortURL returns the long string at the given key or a sql.NoRowsError if none is found
+func (r *Repository) ExpandShortURL(_ context.Context, _ string) (string, error) {
+	return "", sql.ErrNoRows
 }

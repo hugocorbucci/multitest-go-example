@@ -54,7 +54,7 @@ func TestHomeReturnsHelloWorld(t *testing.T) {
 func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
 	if len(os.Getenv("TARGET_URL")) == 0 {
 		testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
-			"unitServerTest":        func(*testing.T) (string, func(), HTTPClient) {
+			"unitServerTest": func(*testing.T) (string, func(), HTTPClient) {
 				repo := stubs.NewStubRepository(nil)
 				s := server.NewHTTPServer(repo)
 				httpClient := &InMemoryHTTPClient{server: s}
@@ -82,7 +82,7 @@ func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient
 
 func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore) (string, func()) {
 	ctx := context.Background()
-	s := server.NewHTTPServer(inMemoryStore)
+	s := server.NewHTTPServer(inMemoryStore.Store)
 
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -98,7 +98,6 @@ func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore)
 		}
 	}
 }
-
 
 func readBodyFrom(resp *http.Response) (string, error) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
