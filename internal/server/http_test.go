@@ -37,11 +37,11 @@ func (c *InMemoryHTTPClient) Do(r *http.Request) (*http.Response, error) {
 }
 
 func TestHomeReturnsHelloWorld(t *testing.T) {
-	withDependencies(t, func(t *testing.T, baseURL string, httpClient HTTPClient) {
-		httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+	withDependencies(t, func(t *testing.T, deps *TestDependencies) {
+		httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/", nil)
 		require.NoError(t, err, "could not create GET / request")
 
-		resp, err := httpClient.Do(httpReq)
+		resp, err := deps.HTTPClient.Do(httpReq)
 		require.NoError(t, err, "error making request %+v", httpReq)
 
 		require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
@@ -52,10 +52,10 @@ func TestHomeReturnsHelloWorld(t *testing.T) {
 }
 
 func TestShortURLReturnsNotFoundForInvalidURL(baseT *testing.T) {
-	withDependencies(baseT, func(t *testing.T, baseURL string, httpClient HTTPClient) {
-		httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/invalid", nil)
+	withDependencies(baseT, func(t *testing.T, deps *TestDependencies) {
+		httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/invalid", nil)
 		require.NoError(t, err, "could not create GET / request")
-		resp, err := httpClient.Do(httpReq)
+		resp, err := deps.HTTPClient.Do(httpReq)
 		require.NoError(t, err, "error making request %+v", httpReq)
 		require.Equal(t, http.StatusNotFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
 
@@ -66,10 +66,10 @@ func TestShortURLReturnsNotFoundForInvalidURL(baseT *testing.T) {
 }
 
 func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
-	withDependencies(baseT, func(t *testing.T, baseURL string, httpClient HTTPClient) {
-		httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/123456789012", nil)
+	withDependencies(baseT, func(t *testing.T, deps *TestDependencies) {
+		httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/123456789012", nil)
 		require.NoError(t, err, "could not create GET / request")
-		resp, err := httpClient.Do(httpReq)
+		resp, err := deps.HTTPClient.Do(httpReq)
 		require.NoError(t, err, "error making request %+v", httpReq)
 		require.Equal(t, http.StatusNotFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
 
@@ -80,7 +80,7 @@ func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
 }
 
 func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
-	withDependencies(baseT, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+	withDependencies(baseT, func(t *testing.T, deps *TestDependencies) {
 		mocking := false
 		input := "123456789012"
 		output := "https://www.digitalocean.com"
@@ -91,9 +91,9 @@ func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
 			// TODO: cadastrar a URL
 		}
 
-		httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/"+input, nil)
+		httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/"+input, nil)
 		require.NoError(t, err, "could not create GET / request")
-		resp, err := httpClient.Do(httpReq)
+		resp, err := deps.HTTPClient.Do(httpReq)
 		require.NoError(t, err, "error making request %+v", httpReq)
 		require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
 
@@ -104,32 +104,38 @@ func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
 	})
 }
 
-func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
+// TestDependencies encapsulates the dependencies needed to run a test
+type TestDependencies struct {
+	BaseURL    string
+	HTTPClient HTTPClient
+}
+
+func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)) {
 	if len(os.Getenv("TARGET_URL")) == 0 {
-		testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
-			"unitServerTest": func(*testing.T) (string, func(), HTTPClient) {
+		testStates := map[string]func(*testing.T) (*TestDependencies, func()){
+			"unitServerTest": func(*testing.T) (*TestDependencies, func()) {
 				repo := stubs.NewStubRepository(nil)
 				s := server.NewHTTPServer(repo)
 				httpClient := &InMemoryHTTPClient{server: s}
-				return "", func() {}, httpClient
+				return &TestDependencies{BaseURL: "", HTTPClient: httpClient}, func() {}
 			},
-			"integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+			"integrationServerTest": func(t *testing.T) (*TestDependencies, func()) {
 				ctx := context.Background()
 				inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
 				require.NoError(t, err, "error creating in memory store")
 				baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
-				return baseURL, stop, http.DefaultClient
+				return &TestDependencies{BaseURL: baseURL, HTTPClient: http.DefaultClient}, stop
 			},
 		}
 		for name, dep := range testStates {
 			baseT.Run(name, func(t *testing.T) {
-				baseURL, stop, client := dep(t)
+				deps, stop := dep(t)
 				defer stop()
-				test(t, baseURL, client)
+				test(t, deps)
 			})
 		}
 	} else {
-		test(baseT, os.Getenv("TARGET_URL"), http.DefaultClient)
+		test(baseT, &TestDependencies{BaseURL: os.Getenv("TARGET_URL"), HTTPClient: http.DefaultClient})
 	}
 }
 
