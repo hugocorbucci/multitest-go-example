@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/hugocorbucci/multitest-go-example/internal/server"
 	"github.com/hugocorbucci/multitest-go-example/internal/storage"
@@ -17,6 +17,9 @@ import (
 const (
 	port      = "8080"
 	sqlDriver = "mysql"
+
+	maxIdleConns    = 10
+	maxConnLifetime = 20 * time.Minute
 )
 
 func main() {
@@ -27,27 +30,11 @@ func main() {
 	if len(dbConn) == 0 {
 		dbConn = "root:sekret@tcp(localhost:3306)/multitest"
 	}
-	db := initializeStore(context.Background(), dbConn, ll)
+	db := storage.InitializeStore(context.Background(), sqlDriver, dbConn, ll, maxIdleConns, maxConnLifetime)
 	repo := storage.NewSQLStore(db)
 
 	s := server.NewHTTPServer(repo)
 	if err := http.ListenAndServe(addr, s); err != nil {
 		ll.Fatal("HTTP(s) server failed")
 	}
-}
-
-func initializeStore(ctx context.Context, conn string, l *log.Logger) *sql.DB {
-	mainDB, err := sql.Open(sqlDriver, conn)
-	if err != nil {
-		l.Fatalf("failed to open main store: %v", err)
-	}
-
-	row := mainDB.QueryRowContext(ctx, "SELECT 1 FROM dual")
-	var ping int
-	err = row.Scan(&ping)
-	if err != nil {
-		l.Fatalf("failed to ping DB: %v", err)
-	}
-
-	return mainDB
 }

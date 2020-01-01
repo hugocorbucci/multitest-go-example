@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"log"
+	"time"
 )
 
 // sqlStore encapsulates information necessary to query the database
@@ -25,4 +27,23 @@ func NewSQLStore(db *sql.DB) Repository {
 
 func (s *sqlStore) ExpandShortURL(_ context.Context, _ string) (string, error) {
 	return "", sql.ErrNoRows
+}
+
+// InitializeStore initializes a sql connection to a given connection
+func InitializeStore(ctx context.Context, sqlDriver, conn string, l *log.Logger, maxIdleConns int, maxConnLifetime time.Duration) *sql.DB {
+	mainDB, err := sql.Open(sqlDriver, conn)
+	if err != nil {
+		l.Fatalf("failed to open main store: %v", err)
+	}
+	mainDB.SetMaxIdleConns(maxIdleConns)
+	mainDB.SetConnMaxLifetime(maxConnLifetime)
+
+	row := mainDB.QueryRowContext(ctx, "SELECT 1 FROM dual")
+	var ping int
+	err = row.Scan(&ping)
+	if err != nil {
+		l.Fatalf("failed to ping DB: %v", err)
+	}
+
+	return mainDB
 }

@@ -9,11 +9,14 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/hugocorbucci/multitest-go-example/internal/server"
+	"github.com/hugocorbucci/multitest-go-example/internal/storage"
 	"github.com/hugocorbucci/multitest-go-example/internal/storage/sqltesting"
 	"github.com/hugocorbucci/multitest-go-example/internal/storage/stubs"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -108,6 +111,7 @@ func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
 type TestDependencies struct {
 	BaseURL    string
 	HTTPClient HTTPClient
+	DB         storage.Repository
 }
 
 func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)) {
@@ -132,7 +136,11 @@ func unitDependencies(*testing.T) (*TestDependencies, func()) {
 	repo := stubs.NewStubRepository(nil)
 	s := server.NewHTTPServer(repo)
 	httpClient := &InMemoryHTTPClient{server: s}
-	return &TestDependencies{BaseURL: "", HTTPClient: httpClient}, func() {}
+	return &TestDependencies{
+		BaseURL:    "",
+		HTTPClient: httpClient,
+		DB:         repo,
+	}, func() {}
 }
 
 func integrationDependencies(t *testing.T) (*TestDependencies, func()) {
@@ -140,11 +148,22 @@ func integrationDependencies(t *testing.T) (*TestDependencies, func()) {
 	inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
 	require.NoError(t, err, "error creating in memory store")
 	baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
-	return &TestDependencies{BaseURL: baseURL, HTTPClient: http.DefaultClient}, stop
+	return &TestDependencies{
+		BaseURL:    baseURL,
+		HTTPClient: http.DefaultClient,
+		DB:         inMemoryStore.Store,
+	}, stop
 }
 
-func smokeDependencies(_ *testing.T) *TestDependencies {
-	return &TestDependencies{BaseURL: os.Getenv("TARGET_URL"), HTTPClient: http.DefaultClient}
+func smokeDependencies(t *testing.T) *TestDependencies {
+	ctx := context.Background()
+	l := sqltesting.NewTestingLog(t)
+	db := storage.InitializeStore(ctx, "mysql", os.Getenv("DB_CONN"), l, 1, 10*time.Second)
+	return &TestDependencies{
+		BaseURL:    os.Getenv("TARGET_URL"),
+		HTTPClient: http.DefaultClient,
+		DB:         storage.NewSQLStore(db),
+	}
 }
 
 func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore) (string, func()) {
