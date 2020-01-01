@@ -79,6 +79,31 @@ func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
 	})
 }
 
+func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
+	withDependencies(baseT, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+		mocking := false
+		input := "123456789012"
+		output := "https://www.digitalocean.com"
+
+		if mocking {
+			// TODO: Mockar
+		} else {
+			// TODO: cadastrar a URL
+		}
+
+		httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/"+input, nil)
+		require.NoError(t, err, "could not create GET / request")
+		resp, err := httpClient.Do(httpReq)
+		require.NoError(t, err, "error making request %+v", httpReq)
+		require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+
+		body, err := readBodyFrom(resp)
+		require.NoError(t, err, "unexpected error reading response body")
+		assert.Equal(t, "", body, "expected body to match")
+		assert.Equal(t, output, resp.Header.Get("Location"), "expected location to match")
+	})
+}
+
 func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
 	if len(os.Getenv("TARGET_URL")) == 0 {
 		testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
