@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -34,54 +34,54 @@
     <div class="reveal">
       <div class="slides">
         <section>
-          <h1>O Paralelepípedo de testes</h1>
-          <h2>Quebrando a pirâmide de testes <em>propositalmente</em></h2>
+          <h1>The test parallelepiped</h1>
+          <h2>Breaking the test pyramid <em>on purpose</em></h2>
 
           <h3>Hugo Corbucci - <a href="https://www.digitalocean.com">DigitalOcean</a></h3>
         </section>
         <section>
-          <h2>O contexto:</h2>
-          <h2 class="fragment">Micro-serviços</h2>
-          <h3 class="fragment">Serviços pequenos request/response com dependências</h3>
+          <h2>The context:</h2>
+          <h2 class="fragment">Micro-services</h2>
+          <h3 class="fragment">Small request/response services with dependencies</h3>
         </section>
         <section>
-          <h2 style="margin-bottom: 5rem">A pirâmide:</h2>
+          <h2 style="margin-bottom: 5rem">The pyramid:</h2>
           <div style="display:flex;flex-flow: column;">
-            <h2 class="fragment" style="order: 3">MUITOS testes de unidade</h2>
-            <h3 class="fragment" style="order: 2">Vários de integração</h3>
-            <h4 class="fragment" style="order: 1">alguns de usuário</h4>
+            <h2 class="fragment" style="order: 3">MANY unit tests</h2>
+            <h3 class="fragment" style="order: 2">Multiple integration</h3>
+            <h4 class="fragment" style="order: 1">some user tests</h4>
           </div>
         </section>
         <section>
-          <h2>Por que a pirâmide existe?</h2>
-          <h3 class="fragment">Testes de unidade são rápidos mas não pegam problemas de integração.</h3>
-          <h3 class="fragment">Testes de integração são mais lentos e difíceis de debugar mas pegam mais problemas</h3>
-          <h3 class="fragment">Testes de usuário exercitam o que o usuário vê mas são lentos e pouco confiáveis</h3>
+          <h2>Why does the pyramid exist?</h2>
+          <h3 class="fragment">Unit tests are fast but don't catch integration issues</h3>
+          <h3 class="fragment">Integration tests are slower and harder to debug but catch more issues</h3>
+          <h3 class="fragment">User tests exercise your software from your user's point of view but are slow and unreliable</h3>
         </section>
         <section>
-          <h2>Os problemas que vêm com a pirâmide:</h2>
-          <h3 class="fragment">Testes de unidade muito simples que não pegam problemas reais</h3>
-          <h3 class="fragment">Testes de integração com muita repetição de lógica das unidades</h3>
-          <h3 class="fragment">Testes de usuário apenas para casos de sucesso que rodam várias vezes</h3>
+          <h2>The problems that come with the pyramid:</h2>
+          <h3 class="fragment">Unit tests that are too simplistic and don't catch real problems</h3>
+          <h3 class="fragment">Integration tests with much test case overlap with unit tests</h3>
+          <h3 class="fragment">User tests only for common happy paths</h3>
         </section>
         <section>
-          <h2>A solução:</h2>
-          <h2 class="fragment">Injeção de dependência</h2>
+          <h2>The solution:</h2>
+          <h2 class="fragment">Dependency Injection</h2>
         </section>
         <section>
-          <h1>FIM!</h1>
-          <h5>O desenvolvimento dessa ideia fica a cargo da audiência</h5>
+          <h1>THE END!</h1>
+          <h5>The implementation of this idea is left as an exercise to the audience</h5>
         </section>
         <section>
-          <h2>Injeção de dependências</h2>
+          <h2>Dependency Injection</h2>
         </section>
         <section>
-          <h2>Teste é código</h2>
-          <h2 class="fragment">que dependende do código sob teste</h2>
-          <h2 class="fragment">para dar 👍 ou 👎</h2>
+          <h2>Tests are code</h2>
+          <h2 class="fragment">that depends on the soft it is testing</h2>
+          <h2 class="fragment">to give a 👍 or 👎</h2>
         </section>
         <section>
-          <h2>Exemplo de código go http</h2>
+          <h2>A go http webserver example</h2>
           <h3><a href="https://github.com/hugocorbucci/multitest-go-example" target="_blank" rel="noopener noreferrer">https://github.com/hugocorbucci/multitest-go-example</a></h3>
         </section>
         <section>
@@ -140,7 +140,7 @@
           </pre>
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide13/internal/server/http_internal_test.go#L12-L20" target="_blank" rel="noopener noreferrer">internal/server/http_internal_test.go</a><br/>
           <a href="https://github.com/stretchr/testify" target="_blank" rel="noopener noreferrer" style="font-size:50%;">https://github.com/stretchr/testify</a>
-          <h3 class="fragment">Não testa a integração com a biblioteca mux (nem o código de NewServer)</h3>
+          <h3 class="fragment">This doesn't test the integration with the mux library (or the NewServer code)</h3>
         </section>
         <section>
           <pre>
@@ -159,7 +159,7 @@
             </code>
           </pre>
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide14/internal/server/http_test.go#L14-L24" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
-          <h3 class="fragment">Melhor, mas não lida com (de)serialização do http</h3>
+          <h3 class="fragment">This is better, but doesn't handle HTTP (de)serialization</h3>
         </section>
         <section>
           <pre>
@@ -190,7 +190,7 @@
             </code>
           </pre>
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide15/internal/server/http_test.go#L29-L55" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
-          <h3 class="fragment">Agora testa tudo: subir o servidor, executar o código e fechar tudo</h3>
+          <h3 class="fragment">Now everything is tested: bringing the server up, executing the code and closing it all</h3>
         </section>
         <section>
           <pre>
@@ -219,7 +219,7 @@
             </code>
           </pre>
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide16/internal/server/http_test.go#L17-L42" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
-          <h3 class="fragment">MUITA duplicação! Dá pra refatorar</h3>
+          <h3 class="fragment">A LOT of duplication! We can refactor this</h3>
         </section>
         <section>
           <pre>
@@ -262,7 +262,7 @@
             </code>
           </pre>
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide17/internal/server/http_test.go#L18-L60" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
-          <h3 class="fragment">Bem mais semelhante</h3>
+          <h3 class="fragment">That's a lot closer</h3>
         </section>
         <section>
           <pre>
@@ -310,10 +310,10 @@
             </code>
           </pre>
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide18/internal/server/http_test.go#L18-L60" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
-          <h3 class="fragment">Agora está bem claro, as dependências são diferentes, mas o teste é o mesmo</h3>
+          <h3 class="fragment">Now it's obvious, the dependencies are different, but the test is the same</h3>
         </section>
         <section>
-          <h2>Refatora para injetar as dependências</h2>
+          <h2>Refactor to inject dependencies</h2>
           <div class="fragment">
             <pre>
               <code class="hljs go" data-trim data-noescape data-line-numbers="1,3-11,14-18" style="font-size:200%;max-height:initial;">
@@ -343,7 +343,7 @@
           </div>
         </section>
         <section>
-          <h2>Agora podemos apagar o TestHomeReturnsHelloWorldLocal e usar no TestHomeReturnsHelloWorld</h2>
+          <h2>Now we can erase TestHomeReturnsHelloWorldLocal and use TestHomeReturnsHelloWorld</h2>
           <div class="fragment">
             <pre>
               <code class="hljs go" data-trim data-noescape data-line-numbers="2" style="font-size:200%;max-height:initial;">
@@ -367,7 +367,7 @@
           </div>
         </section>
         <section>
-          <h2>Lucrinho</h2>
+          <h2>A little profit</h2>
           <pre class="fragment">
             <code class="hljs bash" data-trim data-noescape data-line-numbers="1,6-14" style="font-size:200%;max-height:initial;">
               $ $ go test -v ./...
@@ -389,7 +389,7 @@
           </pre>
         </section>
         <section>
-          <h3>Aproveita pra lucrar mais<br/>Introduz a habilidade de testar serviço externo</h3>
+          <h3>We can profit more<br/>Add the ability to test an external service</h3>
           <div class="fragment">
             <pre>
               <code class="hljs go" data-trim data-noescape data-line-numbers="2,21-23" style="font-size:150%;max-height:initial;">
@@ -423,7 +423,7 @@
           </div>
         </section>
         <section>
-          <h2>Mais lucro</h2>
+          <h2>More profit</h2>
           <pre class="fragment">
             <code class="hljs bash" data-trim data-noescape data-line-numbers="1,6-7,10,15-16" style="font-size:200%;max-height:initial;">
               $ TARGET_URL=http://localhost:8080 go test -v ./...
@@ -448,7 +448,7 @@
           </pre>
         </section>
         <section>
-          <h2>Mesmo código, testes em memória, local ou remoto!</h2>
+          <h2>Same code, in memory tests ("unit"), local ("integration") or remote ("smoke")!</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape style="font-size:200%;max-height:initial;">
               func TestHomeReturnsHelloWorld(t *testing.T) {
@@ -470,11 +470,11 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide24/internal/server/http_test.go#L37-L50" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h1>Pausa para perguntas</h1>
-          <h3>Próximo passo:<br/>adicionar dependências no serviço em si</h3>
+          <h1>Pause for questions</h1>
+          <h3>Next step:<br/>add a dependency to the service itself</h3>
         </section>
         <section>
-          <h2>Introduzindo dependência no sistema (e no teste)</h2>
+          <h2>Adding a dependency to the system (and the test)</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="5-13" style="font-size:200%;max-height:initial;">
               func main() {
@@ -498,7 +498,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide26/cmd/server/main.go#L22-L37" target="_blank" rel="noopener noreferrer">cmd/server/main.go</a>
         </section>
         <section>
-          <h2>Corrigindo o servidor</h2>
+          <h2>Fixing the server</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="1-3,6,9,15" style="font-size:200%;max-height:initial;">
               type httpHandler struct {
@@ -525,7 +525,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide27/internal/server/http.go#L17-L35" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h2>Corrigindo os testes de unidade</h2>
+          <h2>Fixing the unit tests</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="2,5" style="font-size:200%;max-height:initial;">
               func TestHelloWord(t *testing.T) {
@@ -543,7 +543,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide28/internal/server/http_internal_test.go#L12-L22" target="_blank" rel="noopener noreferrer">internal/server/http_internal_test.go</a>
         </section>
         <section>
-          <h3>Corrigindo os testes de integração</h3>
+          <h3>Fixing the integration tests</h3>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="5-7,11-14" style="font-size:150%">
               func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
@@ -579,7 +579,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide29/internal/server/http_test.go#L54-L81" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h2>Corrigindo os testes de integração (2)</h2>
+          <h2>Fixing the integration tests (2)</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="1,3" style="font-size:150%;max-height:initial;">
               func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore) (string, func()) {
@@ -605,7 +605,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide30/internal/server/http_test.go#L83-L100" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h2>E esse MemoryStore mágico?</h2>
+          <h2>What is this magic MemoryStore?</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="2-3,15-16,24" style="font-size:150%;max-height:initial;">
               // NewMemoryStore returns a sqlite "in-memory" repository for local tests.
@@ -630,7 +630,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide31/internal/storage/sqltesting/memory.go#L24-L40" target="_blank" rel="noopener noreferrer">internal/storage/sqltesting/memory.go</a>
         </section>
         <section>
-          <h2>Adicionando uma funcionalidade</h2>
+          <h2>Adding a feature</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="7" style="font-size:200%;max-height:initial;">
               // NewHTTPServer creates a new server
@@ -650,7 +650,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide32/internal/server/http.go#L22-L31" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h2>Adicionando uma funcionalidade</h2>
+          <h2>Adding a feature</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
               func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
@@ -679,7 +679,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide33/internal/server/http.go#L39-L62" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h2>Adicionando uma funcionalidade</h2>
+          <h2>Adding a feature</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="8" style="font-size:200%;max-height:initial;">
               func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
@@ -707,7 +707,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide34/internal/server/http.go#L48" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h2>Testando</h2>
+          <h2>Testing</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
               func TestShortURLReturnsNotFoundForInvalidURL(baseT *testing.T) {
@@ -729,7 +729,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide35/internal/server/http_test.go#L54-L66" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h2>Testando</h2>
+          <h2>Testing</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
               func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
@@ -751,7 +751,7 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide36/internal/server/http_test.go#L68-L80" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h2>Testando</h2>
+          <h2>Testing</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="4-10" style="font-size:200%;max-height:initial;">
               func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
@@ -778,11 +778,11 @@
             </code>
           </pre>
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide37/internal/server/http_test.go#L82-L105" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
-          <h3 class="fragment">Xi, ferrou! Como resolver?</h3>
+          <h3 class="fragment">Uh oh, that's a problem! How to fix it?</h3>
         </section>
         <section>
-          <h2>A solução:</h2>
-          <h2 class="fragment">Injeção de dependência</h2>
+          <h2>The solution:</h2>
+          <h2 class="fragment">Dependency Injection</h2>
         </section>
         <section>
           <pre style="margin:0;">
@@ -934,13 +934,13 @@
           <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide42/internal/server/http_test.go#L85-L107" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h1>Já deu pra entender né?</h1>
-          <h2 class="fragment">No fim, seu teste é um sistema</h2>
-          <h2 class="fragment">Use as técnicas que você usa<br/>para o seu sistema de produção</h2>
-          <h2 class="fragment">no seu sistema de teste</h2>
+          <h1>Got it right?</h1>
+          <h2 class="fragment">In the end, your test is also software</h2>
+          <h2 class="fragment">Use the techniques you use<br/>in your production software</h2>
+          <h2 class="fragment">for your test software</h2>
         </section>
         <section>
-          <h1>Pô Hugo, mas isso aí na real vai demorar muito!</h1>
+          <h1>But, Hugo, that's going to be super slow!</h1>
           <pre class="fragment">
             <code class="hljs shell" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
               $ for f in $(find . -name '*_test.go'); do grep 'func Test' $f; done | wc -l
@@ -961,20 +961,20 @@
           </pre>
         </section>
         <section>
-          <h1>Outras vantagens que tivemos</h1>
-          <h3 class="fragment">Usar essa suite para evitar problema de desempenho em banco de dados</h3>
-          <h3 class="fragment">Rodar essa suite periodicamente de fora do sistema para achar problemas externos</h3>
-          <h3 class="fragment">Nossa arquitetura é testável pelos nossos usuários</h3>
+          <h1>Other advantages we had</h1>
+          <h3 class="fragment">We use this test suite to identify DB querying performance issues (in production... prior to affecting users)</h3>
+          <h3 class="fragment">Running this test suite periodically from outside our servers to find external issues</h3>
+          <h3 class="fragment">Our architecture is testable by our users since we behave as one</h3>
         </section>
         <section>
-          <h1>Coisas que ainda queremos fazer</h1>
-          <h3 class="fragment">Usar o setup do mock no modo de integração para validar resultados reais</h3>
-          <h3 class="fragment">Melhorar o sistema de preparação do banco/dados</h3>
-          <h3 class="fragment">Tentar em outros contextos</h3>
+          <h1>Things we still want to do</h1>
+          <h3 class="fragment">Use the mock setup code in integration mode to validate mocked expectations/results match reality</h3>
+          <h3 class="fragment">Improve the DB/Data preparation strategy</h3>
+          <h3 class="fragment">Try it in other contexts</h3>
         </section>
         <section>
-          <h1>É isso aí</h1>
-          <h3>Obrigado!</h3>
+          <h1>That's it</h1>
+          <h3>Thank you!</h3>
           <h3>hcorbucci@digitalocean.com</h3>
           <h3>twitter.com/hugocorbucci</h3>
         </section>
