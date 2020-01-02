@@ -98,7 +98,7 @@
                 }
               </code>
             </pre>
-            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/cmd/server/main.go" target="_blank" rel="noopener noreferrer">cmd/server/main.go</a>
+            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide11/cmd/server/main.go#L16-L24" target="_blank" rel="noopener noreferrer">cmd/server/main.go</a>
         </section>
         <section>
             <pre>
@@ -121,7 +121,7 @@
                 }
               </code>
             </pre>
-            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/internal/server/http.go" target="_blank" rel="noopener noreferrer">internal/server/http.go</a><br/>
+            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide12/internal/server/http.go#L10-L27" target="_blank" rel="noopener noreferrer">internal/server/http.go</a><br/>
             <a href="https://github.com/gorilla/mux" target="_blank" rel="noopener noreferrer" style="font-size:50%;">https://github.com/gorilla/mux</a>
         </section>
         <section>
@@ -138,8 +138,8 @@
                 }
             </code>
           </pre>
-          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/internal/server/http_internal_test.go" target="_blank" rel="noopener noreferrer">internal/server/http_internal_test.go</a><br/>
-          <a href="github.com/stretchr/testify" target="_blank" rel="noopener noreferrer" style="font-size:50%;">https://github.com/stretchr/testify</a>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide13/internal/server/http_internal_test.go#L12-L20" target="_blank" rel="noopener noreferrer">internal/server/http_internal_test.go</a><br/>
+          <a href="https://github.com/stretchr/testify" target="_blank" rel="noopener noreferrer" style="font-size:50%;">https://github.com/stretchr/testify</a>
           <h3 class="fragment">Não testa a integração com a biblioteca mux (nem o código de NewServer)</h3>
         </section>
         <section>
@@ -149,7 +149,7 @@
                   s := server.NewHTTPServer()
 
                   w := httptest.NewRecorder()
-                  httpReq := httptest.NewRequest(http.MethodGet, "/", nil)                  
+                  httpReq := httptest.NewRequest(http.MethodGet, "/", nil)
                   s.ServeHTTP(w, httpReq)
                 
                   require.Equal(t, http.StatusOK, w.Code, "expected status code to match for req %+v", httpReq)
@@ -158,32 +158,28 @@
                 }
             </code>
           </pre>
-          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/internal/server/http_test.go" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a><br/>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide14/internal/server/http_test.go#L14-L24" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
           <h3 class="fragment">Melhor, mas não lida com (de)serialização do http</h3>
         </section>
         <section>
           <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="4-9,11-16,18,21,22" style="font-size:200%;max-height:initial;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="3-15,17,20,22" style="font-size:200%;max-height:initial;">
               func TestHomeReturnsHelloWorld(t *testing.T) {
                 s := server.NewHTTPServer()
-
                 listener, err := net.Listen("tcp", "localhost:0")
                 if err != nil {
                   t.Fatalf("could not listen for HTTP requests: %+v", err)
                 }
-                addr := "http://" + listener.Addr().String()
-                srvr := http.Server{Addr: addr, Handler: s}
-
+                baseURL := "http://" + listener.Addr().String()
+                srvr := http.Server{Addr: baseURL, Handler: s}
                 go srvr.Serve(listener)
                 defer func() {
                   if err := srvr.Shutdown(context.Background()); err != nil {
                     t.Logf("could not shutdown http server: %+v", err)
                   }
                 }()
-
-                httpReq, err := http.NewRequest(http.MethodGet, addr+"/", nil)
+                httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
                 require.NoError(t, err, "could not create GET / request")
-
                 resp, err := http.DefaultClient.Do(httpReq)
                 require.NoError(t, err, "error making request %+v", httpReq)
                 require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
@@ -193,18 +189,17 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide15/internal/server/http_test.go#L29-L55" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
           <h3 class="fragment">Agora testa tudo: subir o servidor, executar o código e fechar tudo</h3>
         </section>
         <section>
           <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="2,4-6,8-9,13-14,16-17,19-23" style="font-size:200%;max-height:initial;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2,4,6-8,11-13,17-20" style="font-size:200%;max-height:initial;">
               func TestHomeReturnsHelloWorldLocal(t *testing.T) {
                 s := server.NewHTTPServer()
-
                 w := httptest.NewRecorder()
                 httpReq := httptest.NewRequest(http.MethodGet, "/", nil)
                 s.ServeHTTP(w, httpReq)
-              
                 require.Equal(t, http.StatusOK, w.Code, "expected status code to match for req %+v", httpReq)
                 body := string(w.Body.Bytes())
                 assert.Equal(t, "Hello, world", body, "expected body to match")
@@ -212,10 +207,8 @@
               func TestHomeReturnsHelloWorld(t *testing.T) {
                 baseURL, stop := startTestingHTTPServer(t)
                 defer stop()
-              
                 httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
                 require.NoError(t, err, "could not create GET / request")
-                
                 resp, err := http.DefaultClient.Do(httpReq)
                 require.NoError(t, err, "error making request %+v", httpReq)
                 require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
@@ -225,31 +218,27 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide16/internal/server/http_test.go#L17-L42" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
           <h3 class="fragment">MUITA duplicação! Dá pra refatorar</h3>
         </section>
         <section>
           <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="2-3,5-13,18,27-28,30-32,37" style="line-height:initial;font-size:125%;max-height:initial;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="12-19,27-34" style="line-height:initial;font-size:125%;max-height:initial;">
               func TestHomeReturnsHelloWorldLocal(t *testing.T) {
                 s := server.NewHTTPServer()
                 baseURL := ""
-
                 makeRequest := func(r *http.Request) (*http.Response, error) {
                   w := httptest.NewRecorder()
                   s.ServeHTTP(w, r)
-              
                   return &http.Response{
                     StatusCode: w.Code,
                     Body:       ioutil.NopCloser(bytes.NewReader(w.Body.Bytes())),
                   }, nil
                 }
-
                 httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
                 require.NoError(t, err, "could not create GET / request")
-              
                 resp, err := makeRequest(httpReq)
                 require.NoError(t, err, "error making request %+v", httpReq)
-              
                 require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
                 body, err := readBodyFrom(resp)
                 require.NoError(t, err, "unexpected error reading response body")
@@ -258,17 +247,13 @@
               func TestHomeReturnsHelloWorld(t *testing.T) {
                 baseURL, stop := startTestingHTTPServer(t)
                 defer stop()
-
                 makeRequest := func(r *http.Request) (*http.Response, error) {
                   return http.DefaultClient.Do(r)
                 }
-              
                 httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
                 require.NoError(t, err, "could not create GET / request")
-
                 resp, err := makeRequest(httpReq)
                 require.NoError(t, err, "error making request %+v", httpReq)
-              
                 require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
                 body, err := readBodyFrom(resp)
                 require.NoError(t, err, "unexpected error reading response body")
@@ -276,11 +261,12 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide17/internal/server/http_test.go#L18-L60" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
           <h3 class="fragment">Bem mais semelhante</h3>
         </section>
         <section>
           <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="1-15,17-19,24,33-35,40" style="line-height:initial;font-size:125%;max-height:initial;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="1-14,16-18,29-31" style="line-height:initial;font-size:125%;max-height:initial;">
                 type HTTPClient interface {
                   Do(r *http.Request) (*http.Response, error)
                 }
@@ -290,7 +276,6 @@
                 func (c *InMemoryHTTPClient) Do(r *http.Request) (*http.Response, error) {
                   w := httptest.NewRecorder()
                   c.server.ServeHTTP(w, r)
-                
                   return &http.Response{
                     StatusCode: w.Code,
                     Body:       ioutil.NopCloser(bytes.NewReader(w.Body.Bytes())),
@@ -300,13 +285,10 @@
                   s := server.NewHTTPServer()
                   httpClient := &InMemoryHTTPClient{server: s}
                   baseURL := ""
-
                   httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
                   require.NoError(t, err, "could not create GET / request")
-                
                   resp, err := httpClient.Do(httpReq)
                   require.NoError(t, err, "error making request %+v", httpReq)
-                
                   require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
                   body, err := readBodyFrom(resp)
                   require.NoError(t, err, "unexpected error reading response body")
@@ -316,13 +298,10 @@
                   baseURL, stop := startTestingHTTPServer(t)
                   defer stop()
                   httpClient := http.DefaultClient
-                
                   httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
                   require.NoError(t, err, "could not create GET / request")
-
                   resp, err := httpClient.Do(httpReq)
                   require.NoError(t, err, "error making request %+v", httpReq)
-                
                   require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
                   body, err := readBodyFrom(resp)
                   require.NoError(t, err, "unexpected error reading response body")
@@ -330,55 +309,62 @@
                 }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide18/internal/server/http_test.go#L18-L60" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
           <h3 class="fragment">Agora está bem claro, as dependências são diferentes, mas o teste é o mesmo</h3>
         </section>
         <section>
           <h2>Refatora para injetar as dependências</h2>
-          <pre class="fragment">
-            <code class="hljs go" data-trim data-noescape data-line-numbers="1,3-11,14-18" style="font-size:200%;max-height:initial;">
-              func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
-                testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
-                  "unitServerTest":   func(*testing.T) (string, func(), HTTPClient) {
-                    s := server.NewHTTPServer()
-                    httpClient := &InMemoryHTTPClient{server: s}
-                    return "", func() {}, httpClient
-                  },
-                  "integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
-                    baseURL, stop := startTestingHTTPServer(t)
-                    return baseURL, stop, http.DefaultClient
-                  },
+          <div class="fragment">
+            <pre>
+              <code class="hljs go" data-trim data-noescape data-line-numbers="1,3-11,14-18" style="font-size:200%;max-height:initial;">
+                func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
+                  testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
+                    "unitServerTest":   func(*testing.T) (string, func(), HTTPClient) {
+                      s := server.NewHTTPServer()
+                      httpClient := &InMemoryHTTPClient{server: s}
+                      return "", func() {}, httpClient
+                    },
+                    "integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+                      baseURL, stop := startTestingHTTPServer(t)
+                      return baseURL, stop, http.DefaultClient
+                    },
+                  }
+                  for name, dep := range testStates {
+                    baseT.Run(name, func(t *testing.T) {
+                      baseURL, stop, client := dep(t)
+                      defer stop()
+                      test(t, baseURL, client)
+                    })
+                  }
                 }
-                for name, dep := range testStates {
-                  baseT.Run(name, func(t *testing.T) {
-                    baseURL, stop, client := dep(t)
-                    defer stop()
-                    test(t, baseURL, client)
-                  })
-                }
-              }
-            </code>
-          </pre>
-				</section>
+              </code>
+            </pre>
+            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide19/internal/server/http_test.go#L68-L87" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
+          </div>
+        </section>
         <section>
           <h2>Agora podemos apagar o TestHomeReturnsHelloWorldLocal e usar no TestHomeReturnsHelloWorld</h2>
-          <pre class="fragment">
-            <code class="hljs go" data-trim data-noescape data-line-numbers="2" style="font-size:200%;max-height:initial;">
-              func TestHomeReturnsHelloWorld(t *testing.T) {
-                withDependencies(t, func(t *testing.T, baseURL string, httpClient HTTPClient) {
-                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
-                  require.NoError(t, err, "could not create GET / request")
-
-                  resp, err := httpClient.Do(httpReq)
-                  require.NoError(t, err, "error making request %+v", httpReq)
-                
-                  require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
-                  body, err := readBodyFrom(resp)
-                  require.NoError(t, err, "unexpected error reading response body")
-                  assert.Equal(t, "Hello, world", body, "expected body to match")
-                })
-              }
-            </code>
-          </pre>
+          <div class="fragment">
+            <pre>
+              <code class="hljs go" data-trim data-noescape data-line-numbers="2" style="font-size:200%;max-height:initial;">
+                func TestHomeReturnsHelloWorld(t *testing.T) {
+                  withDependencies(t, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+                    httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                    require.NoError(t, err, "could not create GET / request")
+  
+                    resp, err := httpClient.Do(httpReq)
+                    require.NoError(t, err, "error making request %+v", httpReq)
+                  
+                    require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                    body, err := readBodyFrom(resp)
+                    require.NoError(t, err, "unexpected error reading response body")
+                    assert.Equal(t, "Hello, world", body, "expected body to match")
+                  })
+                }
+              </code>
+            </pre>
+            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide20/internal/server/http_test.go#L36-L49" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
+          </div>
         </section>
         <section>
           <h2>Lucrinho</h2>
@@ -403,36 +389,39 @@
           </pre>
         </section>
         <section>
-          <h2>Aproveita pra lucrar mais<br/>Introduz a habilidade de testar serviço externo</h2>
-          <pre class="fragment">
-            <code class="hljs go" data-trim data-noescape data-line-numbers="2,21-23" style="font-size:200%;max-height:initial;">
-              func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
-                if len(os.Getenv("TARGET_URL")) == 0 {
-                  testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
-                    "unitServerTest":   func(*testing.T) (string, func(), HTTPClient) {
-                      s := server.NewHTTPServer()
-                      httpClient := &InMemoryHTTPClient{server: s}
-                      return "", func() {}, httpClient
-                    },
-                    "integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
-                      baseURL, stop := startTestingHTTPServer(t)
-                      return baseURL, stop, http.DefaultClient
-                    },
+          <h3>Aproveita pra lucrar mais<br/>Introduz a habilidade de testar serviço externo</h3>
+          <div class="fragment">
+            <pre>
+              <code class="hljs go" data-trim data-noescape data-line-numbers="2,21-23" style="font-size:150%;max-height:initial;">
+                func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
+                  if len(os.Getenv("TARGET_URL")) == 0 {
+                    testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
+                      "unitServerTest":   func(*testing.T) (string, func(), HTTPClient) {
+                        s := server.NewHTTPServer()
+                        httpClient := &InMemoryHTTPClient{server: s}
+                        return "", func() {}, httpClient
+                      },
+                      "integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+                        baseURL, stop := startTestingHTTPServer(t)
+                        return baseURL, stop, http.DefaultClient
+                      },
+                    }
+                    for name, dep := range testStates {
+                      baseT.Run(name, func(t *testing.T) {
+                        baseURL, stop, client := dep(t)
+                        defer stop()
+                        test(t, baseURL, client)
+                      })
+                    }
+                  } else {
+                    test(baseT, os.Getenv("TARGET_URL"), http.DefaultClient)
                   }
-                  for name, dep := range testStates {
-                    baseT.Run(name, func(t *testing.T) {
-                      baseURL, stop, client := dep(t)
-                      defer stop()
-                      test(t, baseURL, client)
-                    })
-                  }
-                } else {
-                  test(baseT, os.Getenv("TARGET_URL"), http.DefaultClient)
                 }
-              }
-            </code>
-          </pre>
-				</section>
+              </code>
+            </pre>
+            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide22/internal/server/http_test.go#L36-L49" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
+          </div>
+        </section>
         <section>
           <h2>Mais lucro</h2>
           <pre class="fragment">
@@ -469,7 +458,7 @@
 
                   resp, err := httpClient.Do(httpReq)
                   require.NoError(t, err, "error making request %+v", httpReq)
-                
+
                   require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
                   body, err := readBodyFrom(resp)
                   require.NoError(t, err, "unexpected error reading response body")
@@ -478,13 +467,14 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide24/internal/server/http_test.go#L37-L50" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
           <h1>Pausa para perguntas</h1>
           <h3>Próximo passo:<br/>adicionar dependências no serviço em si</h3>
         </section>
         <section>
-          <h1>Introduzindo dependência no sistema (e no teste)</h1>
+          <h2>Introduzindo dependência no sistema (e no teste)</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="5-13" style="font-size:200%;max-height:initial;">
               func main() {
@@ -505,9 +495,10 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide26/cmd/server/main.go#L22-L37" target="_blank" rel="noopener noreferrer">cmd/server/main.go</a>
         </section>
         <section>
-          <h1>Corrigindo o servidor</h1>
+          <h2>Corrigindo o servidor</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="1-3,6,9,15" style="font-size:200%;max-height:initial;">
               type httpHandler struct {
@@ -531,9 +522,10 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide27/internal/server/http.go#L17-L35" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h1>Corrigindo os testes de unidade</h1>
+          <h2>Corrigindo os testes de unidade</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="2,5" style="font-size:200%;max-height:initial;">
               func TestHelloWord(t *testing.T) {
@@ -548,11 +540,12 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide28/internal/server/http_internal_test.go#L12-L22" target="_blank" rel="noopener noreferrer">internal/server/http_internal_test.go</a>
         </section>
         <section>
-          <h1>Corrigindo os testes de integração</h1>
+          <h3>Corrigindo os testes de integração</h3>
           <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="5-7,11-14" style="font-size:150%;max-height:initial;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="5-7,11-14" style="font-size:150%">
               func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
                 if len(os.Getenv("TARGET_URL")) == 0 {
                   testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
@@ -583,9 +576,10 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide29/internal/server/http_test.go#L54-L81" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h1>Corrigindo os testes de integração (2)</h1>
+          <h2>Corrigindo os testes de integração (2)</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="1,3" style="font-size:150%;max-height:initial;">
               func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore) (string, func()) {
@@ -608,9 +602,10 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide30/internal/server/http_test.go#L83-L100" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h1>E esse MemoryStore mágico?</h1>
+          <h2>E esse MemoryStore mágico?</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="2-3,15-16,24" style="font-size:150%;max-height:initial;">
               // NewMemoryStore returns a sqlite "in-memory" repository for local tests.
@@ -632,9 +627,10 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide31/internal/storage/sqltesting/memory.go#L24-L40" target="_blank" rel="noopener noreferrer">internal/storage/sqltesting/memory.go</a>
         </section>
         <section>
-          <h1>Adicionando uma funcionalidade</h1>
+          <h2>Adicionando uma funcionalidade</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="7" style="font-size:200%;max-height:initial;">
               // NewHTTPServer creates a new server
@@ -651,20 +647,19 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide32/internal/server/http.go#L22-L31" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h1>Adicionando uma funcionalidade</h1>
+          <h2>Adicionando uma funcionalidade</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
               func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
                 ctx := req.Context()
-              
                 short := mux.Vars(req)["short"]
                 if len(short) != 12 {
                   w.WriteHeader(http.StatusNotFound)
                   return
                 }
-              
                 longURL, err := h.repo.ExpandShortURL(ctx, short)
                 if err != nil {
                   if err == sql.ErrNoRows {
@@ -676,26 +671,24 @@
                   }
                   return
                 }
-              
                 w.WriteHeader(http.StatusFound)
                 w.Header().Set("Location", longURL)
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide33/internal/server/http.go#L39-L62" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h1>Adicionando uma funcionalidade</h1>
+          <h2>Adicionando uma funcionalidade</h2>
           <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="10" style="font-size:200%;max-height:initial;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="8" style="font-size:200%;max-height:initial;">
               func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
                 ctx := req.Context()
-              
                 short := mux.Vars(req)["short"]
                 if len(short) != 12 {
                   w.WriteHeader(http.StatusNotFound)
                   return
                 }
-              
                 longURL, err := h.repo.ExpandShortURL(ctx, short)
                 if err != nil {
                   if err == sql.ErrNoRows {
@@ -706,15 +699,15 @@
                   }
                   return
                 }
-              
                 w.WriteHeader(http.StatusFound)
                 w.Header().Set("Location", longURL)
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide34/internal/server/http.go#L48" target="_blank" rel="noopener noreferrer">internal/server/http.go</a>
         </section>
         <section>
-          <h1>Testando</h1>
+          <h2>Testando</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
               func TestShortURLReturnsNotFoundForInvalidURL(baseT *testing.T) {
@@ -733,9 +726,10 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide35/internal/server/http_test.go#L54-L66" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h1>Testando</h1>
+          <h2>Testando</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
               func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
@@ -754,9 +748,10 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide36/internal/server/http_test.go#L68-L80" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
-          <h1>Testando</h1>
+          <h2>Testando</h2>
           <pre>
             <code class="hljs go" data-trim data-noescape data-line-numbers="4-10" style="font-size:200%;max-height:initial;">
               func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
@@ -769,13 +764,10 @@
                   } else {
                     // TODO: cadastrar a URL
                   }
-              
                   httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/"+input, nil)
                   require.NoError(t, err, "could not create GET / request")
-              
                   resp, err := httpClient.Do(httpReq)
                   require.NoError(t, err, "error making request %+v", httpReq)
-              
                   require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
                   body, err := readBodyFrom(resp)
                   require.NoError(t, err, "unexpected error reading response body")
@@ -785,6 +777,7 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide37/internal/server/http_test.go#L82-L105" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
           <h3 class="fragment">Xi, ferrou! Como resolver?</h3>
         </section>
         <section>
@@ -792,7 +785,7 @@
           <h2 class="fragment">Injeção de dependência</h2>
         </section>
         <section>
-          <pre>
+          <pre style="margin:0;">
             <code class="hljs go" data-trim data-noescape data-line-numbers="1-4,6,8-9,13,15,20,31" style="font-size:150%;max-height:initial;">
               // TestDependencies encapsulates the dependencies needed to run a test
               type TestDependencies struct {
@@ -831,8 +824,8 @@
           </pre>
         </section>
         <section>
-          <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:150%;max-height:initial;">
+          <pre style="margin:0;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:150%;">
               func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)) {
                 if len(os.Getenv("TARGET_URL")) == 0 {
                   testStates := map[string]func(*testing.T) (*TestDependencies, func()){
@@ -868,10 +861,11 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide40/internal/server/http_test.go#L110-L167" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
           <pre>
-            <code class="hljs go" data-trim data-noescape data-line-numbers="4,12,23,29,33" style="font-size:150%;max-height:initial;">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="4,12,23,29,33" style="font-size:150%;">
               type TestDependencies struct {
                 BaseURL    string
                 HTTPClient HTTPClient
@@ -909,6 +903,7 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide41/internal/server/http_test.go#L110-L167" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
           <pre>
@@ -923,13 +918,10 @@
                   } else {
                     // TODO: cadastrar a URL
                   }
-              
                   httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/"+input, nil)
                   require.NoError(t, err, "could not create GET / request")
-              
                   resp, err := deps.HTTPClient.Do(httpReq)
                   require.NoError(t, err, "error making request %+v", httpReq)
-              
                   require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
                   body, err := readBodyFrom(resp)
                   require.NoError(t, err, "unexpected error reading response body")
@@ -939,6 +931,7 @@
               }
             </code>
           </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/slide42/internal/server/http_test.go#L85-L107" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a>
         </section>
         <section>
           <h1>Já deu pra entender né?</h1>
