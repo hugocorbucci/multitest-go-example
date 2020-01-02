@@ -1,0 +1,1015 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>reveal.js</title>
+
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/night.css">
+
+    <!-- Need to fix the code highlighting to enabled the accessibility one -->
+    <!-- <link rel="stylesheet" href="plugin/accessibility/helper.css"> -->
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/monokai.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <script>
+      document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
+      ':35729/livereload.js?snipver=1"></' + 'script>')
+    </script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>O Paralelepípedo de testes</h1>
+          <h2>Quebrando a pirâmide de testes <em>propositalmente</em></h2>
+
+          <h3>Hugo Corbucci - <a href="https://www.digitalocean.com">DigitalOcean</a></h3>
+        </section>
+        <section>
+          <h2>O contexto:</h2>
+          <h2 class="fragment">Micro-serviços</h2>
+          <h3 class="fragment">Serviços pequenos request/response com dependências</h3>
+        </section>
+        <section>
+          <h2 style="margin-bottom: 5rem">A pirâmide:</h2>
+          <div style="display:flex;flex-flow: column;">
+            <h2 class="fragment" style="order: 3">MUITOS testes de unidade</h2>
+            <h3 class="fragment" style="order: 2">Vários de integração</h3>
+            <h4 class="fragment" style="order: 1">alguns de usuário</h4>
+          </div>
+        </section>
+        <section>
+          <h2>Por que a pirâmide existe?</h2>
+          <h3 class="fragment">Testes de unidade são rápidos mas não pegam problemas de integração.</h3>
+          <h3 class="fragment">Testes de integração são mais lentos e difíceis de debugar mas pegam mais problemas</h3>
+          <h3 class="fragment">Testes de usuário exercitam o que o usuário vê mas são lentos e pouco confiáveis</h3>
+        </section>
+        <section>
+          <h2>Os problemas que vêm com a pirâmide:</h2>
+          <h3 class="fragment">Testes de unidade muito simples que não pegam problemas reais</h3>
+          <h3 class="fragment">Testes de integração com muita repetição de lógica das unidades</h3>
+          <h3 class="fragment">Testes de usuário apenas para casos de sucesso que rodam várias vezes</h3>
+        </section>
+        <section>
+          <h2>A solução:</h2>
+          <h2 class="fragment">Injeção de dependência</h2>
+        </section>
+        <section>
+          <h1>FIM!</h1>
+          <h5>O desenvolvimento dessa ideia fica a cargo da audiência</h5>
+        </section>
+        <section>
+          <h2>Injeção de dependências</h2>
+        </section>
+        <section>
+          <h2>Teste é código</h2>
+          <h2 class="fragment">que dependende do código sob teste</h2>
+          <h2 class="fragment">para dar 👍 ou 👎</h2>
+        </section>
+        <section>
+          <h2>Exemplo de código go http</h2>
+          <h3><a href="https://github.com/hugocorbucci/multitest-go-example" target="_blank" rel="noopener noreferrer">https://github.com/hugocorbucci/multitest-go-example</a></h3>
+        </section>
+        <section>
+            <pre>
+              <code class="hljs go" data-trim data-noescape data-line-numbers="2,6" style="font-size:200%;max-height:initial;">
+                func main() {
+                  s := server.NewHTTPServer()
+                  ll := log.New(os.Stdout, "HTTP", 0)
+                  addr := net.JoinHostPort("", "8080")
+
+                  if err := http.ListenAndServe(addr, s); err != nil {
+                    ll.Fatal("HTTP(s) server failed")
+                  }
+                }
+              </code>
+            </pre>
+            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/cmd/server/main.go" target="_blank" rel="noopener noreferrer">cmd/server/main.go</a>
+        </section>
+        <section>
+            <pre>
+              <code class="hljs go" data-trim data-noescape data-line-numbers="7,12-16" style="font-size:200%;max-height:initial;">
+                type Server struct {
+                  *mux.Router
+                }
+
+                func NewHTTPServer() *Server {
+                  r := mux.NewRouter()
+                  r.HandleFunc("/", helloWorld).Methods(http.MethodGet)
+                
+                  return &Server{r}
+                }
+                
+                func helloWorld(w http.ResponseWriter, req *http.Request) {
+                  msg := "Hello, world"
+                  fmt.Println("Responding request")
+                  w.Write([]byte(msg))
+                }
+              </code>
+            </pre>
+            <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/internal/server/http.go" target="_blank" rel="noopener noreferrer">internal/server/http.go</a><br/>
+            <a href="https://github.com/gorilla/mux" target="_blank" rel="noopener noreferrer" style="font-size:50%;">https://github.com/gorilla/mux</a>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
+                func TestHelloWord(t *testing.T) {
+                  w := httptest.NewRecorder()
+                
+                  helloWorld(w, nil)
+                
+                  require.Equal(t, http.StatusOK, w.Code, "expected status code to match")
+                  body := string(w.Body.Bytes())
+                  assert.Equal(t, "Hello, world", body, "expected body to match")
+                }
+            </code>
+          </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/internal/server/http_internal_test.go" target="_blank" rel="noopener noreferrer">internal/server/http_internal_test.go</a><br/>
+          <a href="github.com/stretchr/testify" target="_blank" rel="noopener noreferrer" style="font-size:50%;">https://github.com/stretchr/testify</a>
+          <h3 class="fragment">Não testa a integração com a biblioteca mux (nem o código de NewServer)</h3>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2,4-6" style="font-size:200%;max-height:initial;">
+                func TestHomeReturnsHelloWorldLocal(t *testing.T) {
+                  s := server.NewHTTPServer()
+
+                  w := httptest.NewRecorder()
+                  httpReq := httptest.NewRequest(http.MethodGet, "/", nil)                  
+                  s.ServeHTTP(w, httpReq)
+                
+                  require.Equal(t, http.StatusOK, w.Code, "expected status code to match for req %+v", httpReq)
+                  body := string(w.Body.Bytes())
+                  assert.Equal(t, "Hello, world", body, "expected body to match")
+                }
+            </code>
+          </pre>
+          <a href="https://github.com/hugocorbucci/multitest-go-example/blob/2eccab9d1558a27ee4ae78603481a7acd01418d6/internal/server/http_test.go" target="_blank" rel="noopener noreferrer">internal/server/http_test.go</a><br/>
+          <h3 class="fragment">Melhor, mas não lida com (de)serialização do http</h3>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="4-9,11-16,18,21,22" style="font-size:200%;max-height:initial;">
+              func TestHomeReturnsHelloWorld(t *testing.T) {
+                s := server.NewHTTPServer()
+
+                listener, err := net.Listen("tcp", "localhost:0")
+                if err != nil {
+                  t.Fatalf("could not listen for HTTP requests: %+v", err)
+                }
+                addr := "http://" + listener.Addr().String()
+                srvr := http.Server{Addr: addr, Handler: s}
+
+                go srvr.Serve(listener)
+                defer func() {
+                  if err := srvr.Shutdown(context.Background()); err != nil {
+                    t.Logf("could not shutdown http server: %+v", err)
+                  }
+                }()
+
+                httpReq, err := http.NewRequest(http.MethodGet, addr+"/", nil)
+                require.NoError(t, err, "could not create GET / request")
+
+                resp, err := http.DefaultClient.Do(httpReq)
+                require.NoError(t, err, "error making request %+v", httpReq)
+                require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                body, err := readBodyFrom(resp)
+                require.NoError(t, err, "unexpected error reading response body")
+                assert.Equal(t, "Hello, world", body, "expected body to match")
+              }
+            </code>
+          </pre>
+          <h3 class="fragment">Agora testa tudo: subir o servidor, executar o código e fechar tudo</h3>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2,4-6,8-9,13-14,16-17,19-23" style="font-size:200%;max-height:initial;">
+              func TestHomeReturnsHelloWorldLocal(t *testing.T) {
+                s := server.NewHTTPServer()
+
+                w := httptest.NewRecorder()
+                httpReq := httptest.NewRequest(http.MethodGet, "/", nil)
+                s.ServeHTTP(w, httpReq)
+              
+                require.Equal(t, http.StatusOK, w.Code, "expected status code to match for req %+v", httpReq)
+                body := string(w.Body.Bytes())
+                assert.Equal(t, "Hello, world", body, "expected body to match")
+              }
+              func TestHomeReturnsHelloWorld(t *testing.T) {
+                baseURL, stop := startTestingHTTPServer(t)
+                defer stop()
+              
+                httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                require.NoError(t, err, "could not create GET / request")
+                
+                resp, err := http.DefaultClient.Do(httpReq)
+                require.NoError(t, err, "error making request %+v", httpReq)
+                require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                body, err := readBodyFrom(resp)
+                require.NoError(t, err, "unexpected error reading response body")
+                assert.Equal(t, "Hello, world", body, "expected body to match")
+              }
+            </code>
+          </pre>
+          <h3 class="fragment">MUITA duplicação! Dá pra refatorar</h3>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2-3,5-13,18,27-28,30-32,37" style="line-height:initial;font-size:125%;max-height:initial;">
+              func TestHomeReturnsHelloWorldLocal(t *testing.T) {
+                s := server.NewHTTPServer()
+                baseURL := ""
+
+                makeRequest := func(r *http.Request) (*http.Response, error) {
+                  w := httptest.NewRecorder()
+                  s.ServeHTTP(w, r)
+              
+                  return &http.Response{
+                    StatusCode: w.Code,
+                    Body:       ioutil.NopCloser(bytes.NewReader(w.Body.Bytes())),
+                  }, nil
+                }
+
+                httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                require.NoError(t, err, "could not create GET / request")
+              
+                resp, err := makeRequest(httpReq)
+                require.NoError(t, err, "error making request %+v", httpReq)
+              
+                require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                body, err := readBodyFrom(resp)
+                require.NoError(t, err, "unexpected error reading response body")
+                assert.Equal(t, "Hello, world", body, "expected body to match")
+              }
+              func TestHomeReturnsHelloWorld(t *testing.T) {
+                baseURL, stop := startTestingHTTPServer(t)
+                defer stop()
+
+                makeRequest := func(r *http.Request) (*http.Response, error) {
+                  return http.DefaultClient.Do(r)
+                }
+              
+                httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                require.NoError(t, err, "could not create GET / request")
+
+                resp, err := makeRequest(httpReq)
+                require.NoError(t, err, "error making request %+v", httpReq)
+              
+                require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                body, err := readBodyFrom(resp)
+                require.NoError(t, err, "unexpected error reading response body")
+                assert.Equal(t, "Hello, world", body, "expected body to match")
+              }
+            </code>
+          </pre>
+          <h3 class="fragment">Bem mais semelhante</h3>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="1-15,17-19,24,33-35,40" style="line-height:initial;font-size:125%;max-height:initial;">
+                type HTTPClient interface {
+                  Do(r *http.Request) (*http.Response, error)
+                }
+                type InMemoryHTTPClient struct {
+                  server *server.Server
+                }
+                func (c *InMemoryHTTPClient) Do(r *http.Request) (*http.Response, error) {
+                  w := httptest.NewRecorder()
+                  c.server.ServeHTTP(w, r)
+                
+                  return &http.Response{
+                    StatusCode: w.Code,
+                    Body:       ioutil.NopCloser(bytes.NewReader(w.Body.Bytes())),
+                  }, nil
+                }
+                func TestHomeReturnsHelloWorldLocal(t *testing.T) {
+                  s := server.NewHTTPServer()
+                  httpClient := &InMemoryHTTPClient{server: s}
+                  baseURL := ""
+
+                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                  require.NoError(t, err, "could not create GET / request")
+                
+                  resp, err := httpClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+                
+                  require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "Hello, world", body, "expected body to match")
+                }
+                func TestHomeReturnsHelloWorld(t *testing.T) {
+                  baseURL, stop := startTestingHTTPServer(t)
+                  defer stop()
+                  httpClient := http.DefaultClient
+                
+                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                  require.NoError(t, err, "could not create GET / request")
+
+                  resp, err := httpClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+                
+                  require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "Hello, world", body, "expected body to match")
+                }
+            </code>
+          </pre>
+          <h3 class="fragment">Agora está bem claro, as dependências são diferentes, mas o teste é o mesmo</h3>
+        </section>
+        <section>
+          <h2>Refatora para injetar as dependências</h2>
+          <pre class="fragment">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="1,3-11,14-18" style="font-size:200%;max-height:initial;">
+              func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
+                testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
+                  "unitServerTest":   func(*testing.T) (string, func(), HTTPClient) {
+                    s := server.NewHTTPServer()
+                    httpClient := &InMemoryHTTPClient{server: s}
+                    return "", func() {}, httpClient
+                  },
+                  "integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+                    baseURL, stop := startTestingHTTPServer(t)
+                    return baseURL, stop, http.DefaultClient
+                  },
+                }
+                for name, dep := range testStates {
+                  baseT.Run(name, func(t *testing.T) {
+                    baseURL, stop, client := dep(t)
+                    defer stop()
+                    test(t, baseURL, client)
+                  })
+                }
+              }
+            </code>
+          </pre>
+				</section>
+        <section>
+          <h2>Agora podemos apagar o TestHomeReturnsHelloWorldLocal e usar no TestHomeReturnsHelloWorld</h2>
+          <pre class="fragment">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2" style="font-size:200%;max-height:initial;">
+              func TestHomeReturnsHelloWorld(t *testing.T) {
+                withDependencies(t, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                  require.NoError(t, err, "could not create GET / request")
+
+                  resp, err := httpClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+                
+                  require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "Hello, world", body, "expected body to match")
+                })
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h2>Lucrinho</h2>
+          <pre class="fragment">
+            <code class="hljs bash" data-trim data-noescape data-line-numbers="1,6-14" style="font-size:200%;max-height:initial;">
+              $ $ go test -v ./...
+              ?   	github.com/hugocorbucci/multitest-go-example/cmd/server	[no test files]
+              === RUN   TestHelloWord
+              Responding request
+              --- PASS: TestHelloWord (0.00s)
+              === RUN   TestHomeReturnsHelloWorld
+              === RUN   TestHomeReturnsHelloWorld/unitServerTest
+              Responding request
+              === RUN   TestHomeReturnsHelloWorld/integrationServerTest
+              Responding request
+              --- PASS: TestHomeReturnsHelloWorld (0.00s)
+                  --- PASS: TestHomeReturnsHelloWorld/unitServerTest (0.00s)
+                  --- PASS: TestHomeReturnsHelloWorld/integrationServerTest (0.00s)
+              PASS
+              ok  	github.com/hugocorbucci/multitest-go-example/internal/server	0.148s
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h2>Aproveita pra lucrar mais<br/>Introduz a habilidade de testar serviço externo</h2>
+          <pre class="fragment">
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2,21-23" style="font-size:200%;max-height:initial;">
+              func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
+                if len(os.Getenv("TARGET_URL")) == 0 {
+                  testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
+                    "unitServerTest":   func(*testing.T) (string, func(), HTTPClient) {
+                      s := server.NewHTTPServer()
+                      httpClient := &InMemoryHTTPClient{server: s}
+                      return "", func() {}, httpClient
+                    },
+                    "integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+                      baseURL, stop := startTestingHTTPServer(t)
+                      return baseURL, stop, http.DefaultClient
+                    },
+                  }
+                  for name, dep := range testStates {
+                    baseT.Run(name, func(t *testing.T) {
+                      baseURL, stop, client := dep(t)
+                      defer stop()
+                      test(t, baseURL, client)
+                    })
+                  }
+                } else {
+                  test(baseT, os.Getenv("TARGET_URL"), http.DefaultClient)
+                }
+              }
+            </code>
+          </pre>
+				</section>
+        <section>
+          <h2>Mais lucro</h2>
+          <pre class="fragment">
+            <code class="hljs bash" data-trim data-noescape data-line-numbers="1,6-7,10,15-16" style="font-size:200%;max-height:initial;">
+              $ TARGET_URL=http://localhost:8080 go test -v ./...
+              ?   	github.com/hugocorbucci/multitest-go-example/cmd/server	[no test files]
+              === RUN   TestHelloWord
+              Responding request
+              --- PASS: TestHelloWord (0.00s)
+              === RUN   TestHomeReturnsHelloWorld
+              --- PASS: TestHomeReturnsHelloWorld (0.00s)
+              PASS
+              ok  	github.com/hugocorbucci/multitest-go-example/internal/server	0.034s
+              $ TARGET_URL=http://138.197.59.82 go test -v ./...
+              ?   	github.com/hugocorbucci/multitest-go-example/cmd/server	[no test files]
+              === RUN   TestHelloWord
+              Responding request
+              --- PASS: TestHelloWord (0.00s)
+              === RUN   TestHomeReturnsHelloWorld
+              --- PASS: TestHomeReturnsHelloWorld (0.02s)
+              PASS
+              ok  	github.com/hugocorbucci/multitest-go-example/internal/server	0.065s
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h2>Mesmo código, testes em memória, local ou remoto!</h2>
+          <pre>
+            <code class="hljs go" data-trim data-noescape style="font-size:200%;max-height:initial;">
+              func TestHomeReturnsHelloWorld(t *testing.T) {
+                withDependencies(t, func(baseURL string, httpClient HTTPClient) {
+                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/", nil)
+                  require.NoError(t, err, "could not create GET / request")
+
+                  resp, err := httpClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+                
+                  require.Equal(t, http.StatusOK, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "Hello, world", body, "expected body to match")
+                })
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Pausa para perguntas</h1>
+          <h3>Próximo passo:<br/>adicionar dependências no serviço em si</h3>
+        </section>
+        <section>
+          <h1>Introduzindo dependência no sistema (e no teste)</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="5-13" style="font-size:200%;max-height:initial;">
+              func main() {
+                ll := log.New(os.Stdout, "HTTP - ", 0)
+                addr := net.JoinHostPort("", port)
+
+                dbConn := os.Getenv("DB_CONN")
+                if len(dbConn) == 0 {
+                  dbConn = "root:sekret@tcp(localhost:3306)/multitest"
+                }
+                db := initializeStore(context.Background(), dbConn, ll)
+                repo := storage.NewSQLStore(db)
+              
+                s := server.NewHTTPServer(repo)
+                if err := http.ListenAndServe(addr, s); err != nil {
+                  ll.Fatal("HTTP(s) server failed")
+                }
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Corrigindo o servidor</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="1-3,6,9,15" style="font-size:200%;max-height:initial;">
+              type httpHandler struct {
+                repo storage.Repository
+              }
+              // NewHTTPServer creates a new server
+              func NewHTTPServer(repo storage.Repository) *Server {
+                handler := &httpHandler{repo}
+              
+                r := mux.NewRouter()
+                r.HandleFunc("/", handler.helloWorld).Methods(http.MethodGet)
+              
+                return &Server{
+                  r,
+                }
+              }
+              func (h *httpHandler) helloWorld(w http.ResponseWriter, req *http.Request) {
+                msg := "Hello, world"
+                fmt.Println("Responding request")
+                w.Write([]byte(msg))
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Corrigindo os testes de unidade</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2,5" style="font-size:200%;max-height:initial;">
+              func TestHelloWord(t *testing.T) {
+                handler := &httpHandler{}
+
+                w := httptest.NewRecorder()
+                handler.helloWorld(w, nil)
+
+                require.Equal(t, http.StatusOK, w.Code, "expected status code to match")
+                body := string(w.Body.Bytes())
+                assert.Equal(t, "Hello, world", body, "expected body to match")
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Corrigindo os testes de integração</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="5-7,11-14" style="font-size:150%;max-height:initial;">
+              func withDependencies(baseT *testing.T, test func(*testing.T, string, HTTPClient)) {
+                if len(os.Getenv("TARGET_URL")) == 0 {
+                  testStates := map[string]func(*testing.T) (string, func(), HTTPClient){
+                    "unitServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+                      repo := stubs.NewStubRepository(nil)
+                      s := server.NewHTTPServer(repo)
+                      httpClient := &InMemoryHTTPClient{server: s}
+                      return "", func() {}, httpClient
+                    },
+                    "integrationServerTest": func(t *testing.T) (string, func(), HTTPClient) {
+                      ctx := context.Background()
+                      inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
+                      require.NoError(t, err, "error creating in memory store")
+                      baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
+                      return baseURL, stop, http.DefaultClient
+                    },
+                  }
+                  for name, dep := range testStates {
+                    baseT.Run(name, func(t *testing.T) {
+                      baseURL, stop, client := dep(t)
+                      defer stop()
+                      test(t, baseURL, client)
+                    })
+                  }
+                } else {
+                  test(baseT, os.Getenv("TARGET_URL"), http.DefaultClient)
+                }
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Corrigindo os testes de integração (2)</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="1,3" style="font-size:150%;max-height:initial;">
+              func startTestingHTTPServer(t *testing.T, inMemoryStore *sqltesting.MemoryStore) (string, func()) {
+                ctx := context.Background()
+                s := server.NewHTTPServer(inMemoryStore)
+              
+                listener, err := net.Listen("tcp", "localhost:0")
+                if err != nil {
+                  t.Fatalf("could not listen for HTTP requests: %+v", err)
+                }
+                addr := "http://" + listener.Addr().String()
+                srvr := http.Server{Addr: addr, Handler: s}
+              
+                go srvr.Serve(listener)
+                return addr, func() {
+                  if err := srvr.Shutdown(ctx); err != nil {
+                    t.Logf("could not shutdown http server: %+v", err)
+                  }
+                }
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>E esse MemoryStore mágico?</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="2-3,15-16,24" style="font-size:150%;max-height:initial;">
+              // NewMemoryStore returns a sqlite "in-memory" repository for local tests.
+              func NewMemoryStore(ctx context.Context, l *log.Logger) (*MemoryStore, error) {
+                db, err := NewSQLiteDB(ctx, l)
+                if err != nil {
+                  return nil, err
+                }
+              
+                return &MemoryStore{
+                  DB:    db,
+                  Store: storage.NewSQLStore(db),
+                }, nil
+              }
+              
+              // NewSQLiteDB creates a SQLite DB with the default structure
+              func NewSQLiteDB(ctx context.Context, l *log.Logger) (*sql.DB, error) {
+                return sql.Open("sqlite3", "file::memory:?mode=memory&cache=shared")
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Adicionando uma funcionalidade</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="7" style="font-size:200%;max-height:initial;">
+              // NewHTTPServer creates a new server
+              func NewHTTPServer(repo storage.Repository) *Server {
+                handler := &httpHandler{repo}
+              
+                r := mux.NewRouter()
+                r.HandleFunc("/", handler.helloWorld).Methods(http.MethodGet)
+                r.HandleFunc("/s/{short:[a-f0-9]+}", handler.shortURL).Methods(http.MethodGet)
+              
+                return &Server{
+                  r,
+                }
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Adicionando uma funcionalidade</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
+              func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
+                ctx := req.Context()
+              
+                short := mux.Vars(req)["short"]
+                if len(short) != 12 {
+                  w.WriteHeader(http.StatusNotFound)
+                  return
+                }
+              
+                longURL, err := h.repo.ExpandShortURL(ctx, short)
+                if err != nil {
+                  if err == sql.ErrNoRows {
+                    w.WriteHeader(http.StatusNotFound)
+                    w.Write([]byte("404 page not found\n"))
+                  } else {
+                    w.WriteHeader(http.StatusInternalServerError)
+                    w.Write([]byte(fmt.Sprintf("%+v", err)))
+                  }
+                  return
+                }
+              
+                w.WriteHeader(http.StatusFound)
+                w.Header().Set("Location", longURL)
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Adicionando uma funcionalidade</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="10" style="font-size:200%;max-height:initial;">
+              func (h *httpHandler) shortURL(w http.ResponseWriter, req *http.Request) {
+                ctx := req.Context()
+              
+                short := mux.Vars(req)["short"]
+                if len(short) != 12 {
+                  w.WriteHeader(http.StatusNotFound)
+                  return
+                }
+              
+                longURL, err := h.repo.ExpandShortURL(ctx, short)
+                if err != nil {
+                  if err == sql.ErrNoRows {
+                    w.WriteHeader(http.StatusNotFound)
+                  } else {
+                    w.WriteHeader(http.StatusInternalServerError)
+                    w.Write([]byte(fmt.Sprintf("%+v", err)))
+                  }
+                  return
+                }
+              
+                w.WriteHeader(http.StatusFound)
+                w.Header().Set("Location", longURL)
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Testando</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
+              func TestShortURLReturnsNotFoundForInvalidURL(baseT *testing.T) {
+                withDependencies(baseT, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/invalid", nil)
+                  require.NoError(t, err, "could not create GET / request")
+              
+                  resp, err := httpClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+              
+                  require.Equal(t, http.StatusNotFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "404 page not found\n", body, "expected body to match")
+                })
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Testando</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
+              func TestShortURLReturnsNotFoundForUnknown(baseT *testing.T) {
+                withDependencies(baseT, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/123456789012", nil)
+                  require.NoError(t, err, "could not create GET / request")
+              
+                  resp, err := httpClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+              
+                  require.Equal(t, http.StatusNotFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "404 page not found\n", body, "expected body to match")
+                })
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Testando</h1>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="4-10" style="font-size:200%;max-height:initial;">
+              func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
+                withDependencies(baseT, func(t *testing.T, baseURL string, httpClient HTTPClient) {
+                  mocking := false
+                  input := "123456789012"
+                  output := "https://www.digitalocean.com"
+                  if mocking {
+                    // TODO: Mockar
+                  } else {
+                    // TODO: cadastrar a URL
+                  }
+              
+                  httpReq, err := http.NewRequest(http.MethodGet, baseURL+"/s/"+input, nil)
+                  require.NoError(t, err, "could not create GET / request")
+              
+                  resp, err := httpClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+              
+                  require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "", body, "expected body to match")
+                  assert.Equal(t, output, resp.Header.Get("Location"), "expected location to match")
+                })
+              }
+            </code>
+          </pre>
+          <h3 class="fragment">Xi, ferrou! Como resolver?</h3>
+        </section>
+        <section>
+          <h2>A solução:</h2>
+          <h2 class="fragment">Injeção de dependência</h2>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="1-4,6,8-9,13,15,20,31" style="font-size:150%;max-height:initial;">
+              // TestDependencies encapsulates the dependencies needed to run a test
+              type TestDependencies struct {
+                BaseURL    string
+                HTTPClient HTTPClient
+              }
+              func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)) {
+                if len(os.Getenv("TARGET_URL")) == 0 {
+                  testStates := map[string]func(*testing.T) (*TestDependencies, func()){
+                    "unitServerTest": func(t *testing.T) (*TestDependencies, func()) {
+                      repo := stubs.NewStubRepository(nil)
+                      s := server.NewHTTPServer(repo)
+                      httpClient := &InMemoryHTTPClient{server: s}
+                      return &TestDependencies{BaseURL: "", HTTPClient: httpClient}, func() {}
+                    },
+                    "integrationServerTest": func(t *testing.T) (*TestDependencies, func()) {
+                      ctx := context.Background()
+                      inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
+                      require.NoError(t, err, "error creating in memory store")
+                      baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
+                      return &TestDependencies{BaseURL: baseURL, HTTPClient: http.DefaultClient}, stop
+                    },
+                  }
+                  for name, dep := range testStates {
+                    baseT.Run(name, func(t *testing.T) {
+                      deps, stop := dep(t)
+                      defer stop()
+                      test(t, deps)
+                    })
+                  }
+                } else {
+                  test(baseT, &TestDependencies{BaseURL: os.Getenv("TARGET_URL"), HTTPClient: http.DefaultClient})
+                }
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="" style="font-size:150%;max-height:initial;">
+              func withDependencies(baseT *testing.T, test func(*testing.T, *TestDependencies)) {
+                if len(os.Getenv("TARGET_URL")) == 0 {
+                  testStates := map[string]func(*testing.T) (*TestDependencies, func()){
+                    "unitServerTest":        unitDependencies,
+                    "integrationServerTest": integrationDependencies,
+                  }
+                  for name, dep := range testStates {
+                    baseT.Run(name, func(t *testing.T) {
+                      deps, stop := dep(t)
+                      defer stop()
+                      test(t, deps)
+                    })
+                  }
+                } else {
+                  test(baseT, smokeDependencies(baseT))
+                }
+              }
+              func unitDependencies(t *testing.T) (*TestDependencies, func()) {
+                repo := stubs.NewStubRepository(nil)
+                s := server.NewHTTPServer(repo)
+                httpClient := &InMemoryHTTPClient{server: s}
+                return &TestDependencies{HTTPClient: httpClient}, func() {}
+              }
+              func integrationDependencies(t *testing.T) (*TestDependencies, func()) {
+                ctx := context.Background()
+                inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
+                require.NoError(t, err, "error creating in memory store")
+                baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
+                return &TestDependencies{BaseURL: baseURL, HTTPClient: http.DefaultClient}, stop
+              }
+              func smokeDependencies(_ *testing.T) *TestDependencies {
+                return &TestDependencies{BaseURL: os.Getenv("TARGET_URL"), HTTPClient: http.DefaultClient}
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="4,12,23,29,33" style="font-size:150%;max-height:initial;">
+              type TestDependencies struct {
+                BaseURL    string
+                HTTPClient HTTPClient
+                DB         storage.Repository
+              }
+              func unitDependencies(t *testing.T) (*TestDependencies, func()) {
+                repo := stubs.NewStubRepository(nil)
+                s := server.NewHTTPServer(repo)
+                httpClient := &InMemoryHTTPClient{server: s}
+                return &TestDependencies{
+                  HTTPClient: httpClient,
+                  DB: repo,
+                }, func() {}
+              }
+              func integrationDependencies(t *testing.T) (*TestDependencies, func()) {
+                ctx := context.Background()
+                inMemoryStore, err := sqltesting.NewMemoryStore(ctx, sqltesting.NewTestingLog(t))
+                require.NoError(t, err, "error creating in memory store")
+                baseURL, stop := startTestingHTTPServer(t, inMemoryStore)
+                return &TestDependencies{
+                  BaseURL:    baseURL,
+                  HTTPClient: http.DefaultClient,
+                  DB: inMemoryStore.Store,
+                }, stop
+              }
+              func smokeDependencies(t *testing.T) *TestDependencies {
+                ctx := context.Background()
+                l := sqltesting.NewTestingLog(t)
+                db := storage.InitializeStore(ctx, "mysql", os.Getenv("DB_CONN"), l, 1, 10*time.Second)
+                return &TestDependencies{
+                  BaseURL:    os.Getenv("TARGET_URL"),
+                  HTTPClient: http.DefaultClient,
+                  DB:         storage.NewSQLStore(db),
+                }
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <pre>
+            <code class="hljs go" data-trim data-noescape data-line-numbers="3,7" style="font-size:150%;max-height:initial;">
+              func TestShortURLReturnsFoundForValidURL(baseT *testing.T) {
+                withDependencies(baseT, func(t *testing.T, deps *TestDependencies) {
+                  repo, mocking := deps.DB.(*stubs.Repository)
+                  input := "123456789012"
+                  output := "https://www.digitalocean.com"
+                  if mocking {
+                    repo.Add(input, output)
+                  } else {
+                    // TODO: cadastrar a URL
+                  }
+              
+                  httpReq, err := http.NewRequest(http.MethodGet, deps.BaseURL+"/s/"+input, nil)
+                  require.NoError(t, err, "could not create GET / request")
+              
+                  resp, err := deps.HTTPClient.Do(httpReq)
+                  require.NoError(t, err, "error making request %+v", httpReq)
+              
+                  require.Equal(t, http.StatusFound, resp.StatusCode, "expected status code to match for req %+v", httpReq)
+                  body, err := readBodyFrom(resp)
+                  require.NoError(t, err, "unexpected error reading response body")
+                  assert.Equal(t, "", body, "expected body to match")
+                  assert.Equal(t, output, resp.Header.Get("Location"), "expected location to match")
+                })
+              }
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Já deu pra entender né?</h1>
+          <h2 class="fragment">No fim, seu teste é um sistema</h2>
+          <h2 class="fragment">Use as técnicas que você usa<br/>para o seu sistema de produção</h2>
+          <h2 class="fragment">no seu sistema de teste</h2>
+        </section>
+        <section>
+          <h1>Pô Hugo, mas isso aí na real vai demorar muito!</h1>
+          <pre class="fragment">
+            <code class="hljs shell" data-trim data-noescape data-line-numbers="" style="font-size:200%;max-height:initial;">
+              $ for f in $(find . -name '*_test.go'); do grep 'func Test' $f; done | wc -l
+              179
+              $ for f in $(find . -name '*_test.go'); do cat $f; done | wc -l
+              4893
+              $ for f in $(find . -name '*.go' | grep -v '_test.go'); do cat $f; done | wc -l
+              4811                              64           1528            190           7986
+              $ time make test
+              go test -tags=integration ./...
+              ...
+              74.55 real       145.33 user        27.76 sys
+              $ PUBLIC_SMOKE_TESTS=true ENV=production make smoke_tests
+              ../smoke_tests/bin/run
+              ...
+              [go] Task status: passed, took: 1m 46.536s
+            </code>
+          </pre>
+        </section>
+        <section>
+          <h1>Outras vantagens que tivemos</h1>
+          <h3 class="fragment">Usar essa suite para evitar problema de desempenho em banco de dados</h3>
+          <h3 class="fragment">Rodar essa suite periodicamente de fora do sistema para achar problemas externos</h3>
+          <h3 class="fragment">Nossa arquitetura é testável pelos nossos usuários</h3>
+        </section>
+        <section>
+          <h1>Coisas que ainda queremos fazer</h1>
+          <h3 class="fragment">Usar o setup do mock no modo de integração para validar resultados reais</h3>
+          <h3 class="fragment">Melhorar o sistema de preparação do banco/dados</h3>
+          <h3 class="fragment">Tentar em outros contextos</h3>
+        </section>
+        <section>
+          <h1>É isso aí</h1>
+          <h3>Obrigado!</h3>
+          <h3>hcorbucci@digitalocean.com</h3>
+          <h3>twitter.com/hugocorbucci</h3>
+        </section>
+      </div>
+    </div>
+
+    <script src="js/reveal.js"></script>
+
+    <script>
+      // More info about config & dependencies:
+      // - https://github.com/hakimel/reveal.js#configuration
+      // - https://github.com/hakimel/reveal.js#dependencies
+      Reveal.initialize({
+        controlsTutorial: false,
+        slideNumber: true,
+        hash: true,
+        highlight: {
+          highlightOnLoad: true
+        },
+        dependencies: [
+          { src: 'plugin/markdown/marked.js' },
+          { src: 'plugin/markdown/markdown.js' },
+          { src: 'plugin/notes/notes.js', async: true },
+          { src: 'plugin/highlight/highlight.js', async: true }
+          // TODO: Reenable once made compatible with highlight plugin. Improving accessibility
+          // { src: 'plugin/accessibility/helper.js', async: true, condition: function() { return !!document.body.classList; } }
+        ]
+      });
+    </script>
+  </body>
+</html>
