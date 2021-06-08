@@ -7,7 +7,7 @@
     <meta name="description" content="A presentation introducing multistyle tests in golang">
     <meta name="keywords" content="golang,multistyle,tests,pyramid">
 
-    <title>The test parallelepiped</title>
+    <title>Software and Tests - Binary Systems</title>
 
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/reveal.css">
@@ -37,39 +37,49 @@
     <div class="reveal">
       <div class="slides">
         <section>
-          <h1>The test parallelepiped</h1>
-          <h2>Breaking the test pyramid <em>on purpose</em></h2>
+          <h1>Software and Tests</h1>
+          <h2>Binary Systems</h2>
 
-          <h3>Hugo Corbucci - <a href="https://www.digitalocean.com">DigitalOcean</a></h3>
+          <h3><a href="mailto:hcorbucci@digitalocean.com">Hugo Corbucci</a> - <a href="https://www.digitalocean.com">DigitalOcean</a></h3>
+        </section>
+        <section style="height:100%;">
+          <h3>Not this Binary system</h3>
+          <img src="images/Binary-Joke.png" alt="There are only 10 types of people in the world: Those who understand binary and those who don't." style="max-height: 75%">
+          <h5>Source: <a href="https://medium.com/@aisatou/binary-its-as-easy-as-01-10-11-f2e3334d92a4" target="_blank" rel="noopener noreferrer">https://medium.com/@aisatou/binary-its-as-easy-as-01-10-11-f2e3334d92a4</a></h5>
+        </section>
+        <section>
+          <h3>This Binary system</h3>
+          <img src="images/Binary-Star.gif" alt="There are only 10 types of people in the world: Those who understand binary and those who don't.">
+          <h5>By <a href="https://en.wikipedia.org/wiki/Binary_star#/media/File:Orbit2.gif">User:Zhatt</a> - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=280053</h5>
         </section>
         <section>
           <h2>The context:</h2>
           <h2 class="fragment">Micro-services</h2>
-          <h3 class="fragment">Small request/response services with dependencies</h3>
+          <h3 class="fragment">Small request/response services with (or without) dependencies</h3>
         </section>
         <section>
-          <h2 style="margin-bottom: 5rem">The pyramid:</h2>
+          <h2 style="margin-bottom: 5rem"><a href="https://martinfowler.com/articles/practical-test-pyramid.html" target="_blank" rel="noopener noreferrer">The test pyramid:</a></h2>
           <div style="display:flex;flex-flow: column;">
-            <h2 class="fragment" style="order: 3">MANY unit tests</h2>
-            <h3 class="fragment" style="order: 2">Multiple integration</h3>
-            <h4 class="fragment" style="order: 1">some user tests</h4>
+            <h2 class="fragment" style="order: 3">VERY MANY unit tests</h2>
+            <h3 class="fragment" style="order: 2">Fair # of integration tests</h3>
+            <h4 class="fragment" style="order: 1">Some end to end tests</h4>
           </div>
         </section>
         <section>
           <h2>Why does the pyramid exist?</h2>
-          <h3 class="fragment">Unit tests are fast but don't catch integration issues</h3>
-          <h3 class="fragment">Integration tests are slower and harder to debug but catch more issues</h3>
-          <h3 class="fragment">User tests exercise your software from your user's point of view but are slow and unreliable</h3>
+          <h3 class="fragment">Unit tests are fast<br/>but don't catch integration problems</h3>
+          <h3 class="fragment">Integration tests are slower and harder to debug<br/>but they catch more problems</h3>
+          <h3 class="fragment">End to end tests verify what the user sees<br/>but are slower and less reliable</h3>
         </section>
         <section>
           <h2>The problems that come with the pyramid:</h2>
-          <h3 class="fragment">Unit tests that are too simplistic and don't catch real problems</h3>
-          <h3 class="fragment">Integration tests with much test case overlap with unit tests</h3>
-          <h3 class="fragment">User tests only for common happy paths</h3>
+          <h3 class="fragment">Unit tests that are very simple and don't really catch real problems</h3>
+          <h3 class="fragment">Integration tests that repeat a lot of setup/verifications from unit tests</h3>
+          <h3 class="fragment">End to end tests only for happy paths that are most commonly exercised</h3>
         </section>
         <section>
           <h2>The solution:</h2>
-          <h2 class="fragment">Dependency Injection</h2>
+          <h2 class="fragment"><a href="https://martinfowler.com/articles/injection.html" target="_blank" rel="noopener noreferrer">Dependency Injection</a></h2>
         </section>
         <section>
           <h1>THE END!</h1>
@@ -79,9 +89,9 @@
           <h2>Dependency Injection</h2>
         </section>
         <section>
-          <h2>Tests are code</h2>
-          <h2 class="fragment">that depends on the soft it is testing</h2>
-          <h2 class="fragment">to give a 👍 or 👎</h2>
+          <h2>Test is code</h2>
+          <h2 class="fragment">that depends on the code under test</h2>
+          <h2 class="fragment">to output 👍 or 👎</h2>
         </section>
         <section>
           <h2>A go http webserver example</h2>
@@ -964,22 +974,22 @@
           </pre>
         </section>
         <section>
-          <h1>Other advantages we had</h1>
-          <h3 class="fragment">We use this test suite to identify DB querying performance issues (in production... prior to affecting users)</h3>
-          <h3 class="fragment">Running this test suite periodically from outside our servers to find external issues</h3>
-          <h3 class="fragment">Our architecture is testable by our users since we behave as one</h3>
+          <h1>Other improvements we've had</h1>
+          <h3 class="fragment">Use that test suite to verify generated DB query performance</h3>
+          <h3 class="fragment">Run this suite synthetically outside of the system to find external problems</h3>
+          <h3 class="fragment">Our architecture is testable by our users (since we test it like they would)</h3>
         </section>
         <section>
-          <h1>Things we still want to do</h1>
-          <h3 class="fragment">Use the mock setup code in integration mode to validate mocked expectations/results match reality</h3>
-          <h3 class="fragment">Improve the DB/Data preparation strategy</h3>
-          <h3 class="fragment">Try it in other contexts</h3>
+          <h1>Next steps</h1>
+          <h3 class="fragment">Use the mock/fake setups in tests to validate compability with the actual results in real </h3>
+          <h3 class="fragment">Improve the setup/preparation of data for test runs</h3>
+          <h3 class="fragment">Try in other contexts</h3>
         </section>
         <section>
           <h1>That's it</h1>
           <h3>Thank you!</h3>
-          <h3>hcorbucci@digitalocean.com</h3>
-          <h3>twitter.com/hugocorbucci</h3>
+          <h3><a href="mailto:hcorbucci@digitalocean.com">hcorbucci@digitalocean.com</a></h3>
+          <h3><a href="https://twitter.com/hugocorbucci">twitter.com/hugocorbucci</a></h3>
         </section>
       </div>
     </div>
