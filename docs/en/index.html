@@ -48,6 +48,7 @@
           <h2>Founded in 2011 in NYC</h2>
           <h2>Worldwide operations (13 datacenters in 7 countries)</h2>
           <h2>Remote first company headquartered in NYC</h2>
+          <img src="images/DO-Remotees.png" alt="A world map with some of the DO employee locations (and Hugo in Sao Paulo, Brazil)" style="max-height: 25%">
         </section>
         <section style="height:100%;">
           <h1><a href="https://www.digitalocean.com"><img src="images/DO_Logo_Horizontal_White.png" alt="DigitalOcean logo" style="border:0; background: none;"/></a></h3>
@@ -66,13 +67,19 @@
         </section>
         <section>
           <h3>This Binary system</h3>
-          <img src="images/Binary-Star.gif" alt="There are only 10 types of people in the world: Those who understand binary and those who don't.">
+          <img src="images/Binary-Star.gif" alt="A binary star system that is in balance and each star revolves around each other.">
           <h5>By <a href="https://en.wikipedia.org/wiki/Binary_star#/media/File:Orbit2.gif">User:Zhatt</a> - Own work, Public Domain, https://commons.wikimedia.org/w/index.php?curid=280053</h5>
         </section>
         <section>
           <h2>The context:</h2>
           <h2 class="fragment">Micro-services</h2>
           <h3 class="fragment">Small request/response services with (or without) dependencies</h3>
+        </section>
+        <section>
+          <h1>DigitalOcean's overall architecture</h1>
+          <h3 class="fragment">Few (3) legacy <a href="https://rubyonrails.org/" target="_blank" rel="noopener noreferrer">Ruby on Rails</a> monolithic applications</h3>
+          <h3 class="fragment">Migrating to <a href="https://golang.org/" target="_blank" rel="noopener noreferrer">Golang</a> microservices since 2015 using <a href="https://grpc.io/" target="_blank" rel="noopener noreferrer">gRPC</a>/<a href="https://developers.google.com/protocol-buffers" target="_blank" rel="noopener noreferrer">protobufs</a></h3>
+          <h3 class="fragment">Different datastores depending on the needs highlighting <a href="https://www.mysql.com/" target="_blank" rel="noopener noreferrer">MySQL</a> and <a href="https://etcd.io/" target="_blank" rel="noopener noreferrer">etcd</a></h3>
         </section>
         <section>
           <h2 style="margin-bottom: 5rem"><a href="https://martinfowler.com/articles/practical-test-pyramid.html" target="_blank" rel="noopener noreferrer">The test pyramid:</a></h2>
